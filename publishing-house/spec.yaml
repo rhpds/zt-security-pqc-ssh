@@ -16,8 +16,8 @@ project:
   automation_type: "ansible"
   description: "Hands-On Post-Quantum Cryptography (PQC) with RHEL 10 OpenSSH  In this hands-on lab, participants will explore the transition from classical encryption to quantum-resistant security using Red Hat Enterprise Linux 10. Designed for beginners with no prior post-quantum background, the lab demystifies the \"Harvest Now, Decrypt Later\" (HNDL) threat model and explains how Post-Quantum Cryptography (PQC) protects sensitive enterprise communications.  Through a series of step-by-step practical exercises, learners will inspect a standard, classical SSH session, configure system-wide cryptographic policies to enforce hybrid quantum-resistant key exchanges (ML-KEM), and generate next-generation hybrid authentication keys (ML-DSA). By inspecting raw SSH handshake logs (-vv), participants will directly observe how RHEL 10 seamlessly upgrades session security and user identity verification without breaking existing workflows.  Learning Objectives Understand the core concepts of quantum computing threats (HNDL) and PQC in plain terms.  Inspect classical vs. post-quantum key exchange algorithms during active OpenSSH sessions.  Enforce hybrid post-quantum key exchange mechanisms in sshd.  Generate, deploy, and authenticate using post-quantum SSH key pairs on RHEL 10."
   # content_reviewer_email and infra_reviewer_email are assigned by the RHDP team — not set by the author
-  jira_ticket: ""
-  workflow_id: ""
+  jira_ticket: "RHDPCD-1631"
+  workflow_id: "973bbbcc-e6b7-4d6a-bfd4-2a39ebf0fdfb"
 
 spec:
   title: ""
