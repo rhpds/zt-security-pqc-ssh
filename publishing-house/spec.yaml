@@ -21,8 +21,23 @@ project:
 
 spec:
   title: "Getting Started with Post-Quantum Cryptography in RHEL 10 OpenSSH"
-  learning_objectives: []
-  modules: []              # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
+  learning_objectives:
+  - "Configure system-wide crypto policies to enforce hybrid post-quantum (ML-KEM) key exchange for OpenSSH on RHEL 10."
+  - "Observe the difference between classical and post-quantum key exchange by inspecting raw SSH handshake logs (ssh -vv)."
+  - "Create and authenticate with a hybrid post-quantum (ML-DSA) SSH key pair on RHEL 10."
+  modules:                 # [{id, title, duration_min}] — id is stable (e.g. module-01)
+  - id: module-01
+    title: "Inspect a Classical SSH Session"
+    duration_min: 8
+    status: not_started
+  - id: module-02
+    title: "Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)"
+    duration_min: 12
+    status: not_started
+  - id: module-03
+    title: "Create and Use Post-Quantum Authentication Keys (ML-DSA)"
+    duration_min: 10
+    status: not_started
   environment:
     platform: ""               # ocp | rhel-vms — determines which sizing fields apply
     topology: ""               # shared-cluster | per-student | cnv-pool
@@ -79,7 +94,7 @@ tracking:
 approval_checklist:
 
   content:
-    prerequisites_verifiable: null
+    prerequisites_verifiable: false
     assessment_strategy: ""
     catalog_gap: ""
     design_overview: ""
