@@ -96,11 +96,26 @@ approval_checklist:
   content:
     prerequisites_verifiable: false
     assessment_strategy: ""
-    catalog_gap: ""
+    catalog_gap: "No existing catalog item teaches post-quantum SSH on RHEL 10 — hybrid ML-KEM key exchange, ML-DSA authentication keys, or inspecting classical vs. post-quantum SSH handshakes. The closest labs (zt-crypto-policy, zt-customize-crypto-policy) cover the update-crypto-policies mechanism but stop at classical algorithms (SSL/TLS, RSA/DH), and the IdM workshop treats PQC SSH keys only as a minor sub-topic. This design fills that gap; the crypto-policy lab could serve as an optional primer."
     design_overview: ""
     module_summaries: []
-    rcars_overlap_pct: null
-    rcars_top_matches: []
+    rcars_overlap_pct: 74
+    rcars_top_matches:
+    - title: "Configuring the system-wide cryptographic policy"
+      ci_name: "zt-rhelbu.zt-crypto-policy.prod"
+      url: "https://catalog.demo.redhat.com/catalog?item=zt-rhelbu.zt-crypto-policy.prod"
+      relevance_score: 74
+      why_it_fits: "This lab covers system-wide cryptographic policy configuration on RHEL using update-crypto-policies, which is directly relevant to configuring crypto policies for post-quantum SSH key exchange. However, it focuses on SSL/TLS and the FUTURE policy rather than ML-KEM or ML-DSA post-quantum primitives specifically."
+    - title: "Customize the system-wide cryptographic policy"
+      ci_name: "zt-rhelbu.zt-customize-crypto-policy.prod"
+      url: "https://catalog.demo.redhat.com/catalog?item=zt-rhelbu.zt-customize-crypto-policy.prod"
+      relevance_score: 67
+      why_it_fits: "This lab covers RHEL system-wide cryptographic policies and the update-crypto-policies tool, the foundational mechanism for enabling post-quantum crypto policy configurations. However, it focuses on classical crypto policy customization (RSA/DH key sizes, TLS versions) rather than post-quantum ML-KEM or ML-DSA algorithms, and does not cover OpenSSH handshake inspection or hybrid post-quantum key generation."
+    - title: "Identity Management Workshop"
+      ci_name: "zt-rhelbu.zt-idm-workshop.prod"
+      url: "https://catalog.demo.redhat.com/catalog?item=zt-rhelbu.zt-idm-workshop.prod"
+      relevance_score: 46
+      why_it_fits: "This workshop includes SSH key management and post-quantum cryptography SSH keys as listed topics, but the primary focus is broad IdM/FreeIPA administration rather than dedicated coverage of ML-KEM key exchange, crypto policy configuration, or SSH handshake inspection."
     rejections: []
 
   infra:
