@@ -97,8 +97,14 @@ approval_checklist:
     prerequisites_verifiable: false
     assessment_strategy: ""
     catalog_gap: "No existing catalog item teaches post-quantum SSH on RHEL 10 — hybrid ML-KEM key exchange, ML-DSA authentication keys, or inspecting classical vs. post-quantum SSH handshakes. The closest labs (zt-crypto-policy, zt-customize-crypto-policy) cover the update-crypto-policies mechanism but stop at classical algorithms (SSL/TLS, RSA/DH), and the IdM workshop treats PQC SSH keys only as a minor sub-topic. This design fills that gap; the crypto-policy lab could serve as an optional primer."
-    design_overview: ""
-    module_summaries: []
+    design_overview: "A ~30-minute beginner lab (part 1 of 3 in a 2-hour RH1 session) for junior sysadmins and Linux newcomers, teaching post-quantum cryptography for OpenSSH on RHEL 10. Framed by the Harvest Now, Decrypt Later threat, learners inspect a classical SSH handshake, enforce hybrid ML-KEM key exchange via system-wide crypto policies, and generate and authenticate with an ML-DSA post-quantum key — all with standard RHEL 10 command-line tools."
+    module_summaries:
+    - title: "Inspect a Classical SSH Session"
+      overview: "Learners connect from a RHEL 10 client to a server with ssh -vv and read the raw handshake to record the default classical key exchange, framed by the Harvest Now, Decrypt Later threat. This establishes the baseline for the rest of the lab."
+    - title: "Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)"
+      overview: "Learners use update-crypto-policies to enforce a hybrid post-quantum (ML-KEM) key exchange system-wide, then reconnect and re-inspect the handshake to confirm OpenSSH now negotiates the ML-KEM-based algorithm instead of the classical baseline."
+    - title: "Create and Use Post-Quantum Authentication Keys (ML-DSA)"
+      overview: "Learners generate a hybrid post-quantum (ML-DSA) SSH key pair with ssh-keygen, install the public key on the server, and log in with it — verifying successful post-quantum authentication via verbose SSH output to complete the end-to-end PQC story."
     rcars_overlap_pct: 74
     rcars_top_matches:
     - title: "Configuring the system-wide cryptographic policy"
