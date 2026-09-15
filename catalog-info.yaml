@@ -1,0 +1,50 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: zt-security-pqc-ssh
+  title: zt-security-pqc-ssh
+  description: Hands-On Post-Quantum Cryptography (PQC) with RHEL 10 OpenSSH  In
+    this hands-on lab, participants will explore the transition from classical
+    encryption to quantum-resistant security using Red Hat Enterprise Linux 10.
+    Designed for beginners with no prior post-quantum background, the lab
+    demystifies the "Harvest Now, Decrypt Later" (HNDL) threat model and
+    explains how Post-Quantum Cryptography (PQC) protects sensitive enterprise
+    communications.  Through a series of step-by-step practical exercises,
+    learners will inspect a standard, classical SSH session, configure
+    system-wide cryptographic policies to enforce hybrid quantum-resistant key
+    exchanges (ML-KEM), and generate next-generation hybrid authentication keys
+    (ML-DSA). By inspecting raw SSH handshake logs (-vv), participants will
+    directly observe how RHEL 10 seamlessly upgrades session security and user
+    identity verification without breaking existing workflows.  Learning
+    Objectives Understand the core concepts of quantum computing threats (HNDL)
+    and PQC in plain terms.  Inspect classical vs. post-quantum key exchange
+    algorithms during active OpenSSH sessions.  Enforce hybrid post-quantum key
+    exchange mechanisms in sshd.  Generate, deploy, and authenticate using
+    post-quantum SSH key pairs on RHEL 10.
+  annotations:
+    ph.rhdp.io/content-type: lab
+    ph.rhdp.io/deployment-mode: rhdp_published
+    ph.rhdp.io/github-user: jscar-hawk
+    ph.rhdp.io/owner: jloscar@redhat.com
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: rhpds/zt-security-pqc-ssh
+    ph.rhdp.io/created-at: 2026-09-15T16:52:15.484Z
+  tags:
+    - publishing-house
+    - lab
+    - rhdp-published
+  links:
+    - url: https://github.com/rhpds/zt-security-pqc-ssh
+      title: Repository
+      icon: github
+    - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/zt-security-pqc-ssh
+      title: Open in DevSpaces
+      icon: catalog
+    - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
+      title: Central
+      icon: dashboard
+spec:
+  type: content
+  lifecycle: experimental
+  owner: rhdp-team
+  system: publishing-house
