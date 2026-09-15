@@ -62,16 +62,15 @@ Automation must provision two RHEL 10 hosts (client + server), create the SSH us
 
 ## Infrastructure Requirements
 
-- **Cloud provider:** TBD — confirmed in infrastructure phase
-- **Cluster type:** TBD — confirmed in infrastructure phase
-- **OCP version:** TBD — confirmed in infrastructure phase
-- **Topology:** TBD — confirmed in infrastructure phase
-- **Sizing:** TBD — confirmed in infrastructure phase
-- **Automation approach:** TBD — confirmed in infrastructure phase
-- **AI/MaaS:** TBD — confirmed in infrastructure phase
-- **External services:** TBD — confirmed in infrastructure phase
-- **AAP version:** TBD — confirmed in infrastructure phase
-- **Non-GA products:** TBD — confirmed in infrastructure phase
+- **Platform:** RHEL VMs
+- **Cloud provider:** CNV
+- **Topology:** Per-student (each learner gets their own isolated pair of hosts)
+- **Sizing:** Per student — 1 RHEL 10 client (2 vCPU, 4GB RAM, 30GB disk) + 1 RHEL 10 server (2 vCPU, 4GB RAM, 30GB disk)
+- **Automation approach:** Ansible
+- **AI/MaaS:** None
+- **External services:** cdn.redhat.com, subscription.rhsm.redhat.com (RHEL content pulled at provisioning; the student session is local client-to-server SSH)
+- **AAP version:** N/A (AAP not used)
+- **Non-GA products:** None (RHEL 10 and its post-quantum OpenSSH are GA)
 
 ## Assessment Strategy (Optional)
 
