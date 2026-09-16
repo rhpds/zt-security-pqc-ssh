@@ -1,4 +1,4 @@
-# `<your_collection_name>`
+# `automation`
 
 Starter Ansible collection for this project's custom automation — the base to build your
 own roles on top of. It ships with a single no-op `example` role (`roles/example/`) so
@@ -54,7 +54,7 @@ Then reference it by its fully qualified name once the collection is installed:
 ```yaml
 - name: Run my_role_name
   ansible.builtin.include_role:
-    name: <your_namespace>.<your_collection_name>.my_role_name
+    name: zt_security_pqc_ssh.automation.my_role_name
 ```
 
 ## Testing locally
