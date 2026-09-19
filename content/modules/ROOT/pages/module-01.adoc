@@ -1,1 +1,134 @@
 = Inspect a Classical SSH Session
+:ssh_user: lab-user
+:server_host: server
+
+Every SSH connection begins with a negotiation. Before a single byte of your session is protected, the client and the server agree on a *key exchange algorithm* — the math that lets them establish a shared secret over an untrusted network. On Red Hat Enterprise Linux 10, that choice is governed by the system-wide crypto policy.
+
+In this first module you connect from a RHEL 10 client to a RHEL 10 server and read the raw handshake to see exactly which key exchange algorithm gets chosen by default. This is your *before* picture. In Module 2 you enforce a post-quantum key exchange and compare the two side by side.
+
+== Learning Objectives
+
+After completing this module, you will be able to:
+
+* Explain the Harvest Now, Decrypt Later (HNDL) threat and why classical key exchange is a long-term risk.
+* Observe the key exchange algorithm negotiated during a default (classical) SSH session by inspecting raw handshake logs with `ssh -vv`.
+* Verify that the RHEL 10 client and server start from the `DEFAULT` system-wide crypto policy.
+
+== Why Classical Key Exchange Is a Risk
+
+Today's SSH connections rely on public-key cryptography — algorithms like Curve25519 and ECDH — to agree on a session key. These algorithms are secure against classical computers. They are *not* secure against a large-scale quantum computer.
+
+That gap creates a threat with a memorable name: *Harvest Now, Decrypt Later* (HNDL).
+
+An attacker who can capture your encrypted traffic does not need to break it today. They record it, store it, and wait. Once a capable quantum computer exists, they decrypt everything they saved. Any data with a long confidentiality lifetime — think financial records, health data, or state secrets — is at risk the moment it crosses the wire, even if the quantum computer is years away.
+
+That is why the key exchange matters. If the algorithm protecting your handshake is quantum-vulnerable, so is every session it protects. The rest of this lab shows how RHEL 10 closes that gap. First, you need to see the baseline.
+
+== Exercise 1: Confirm the Baseline Crypto Policy
+
+The system-wide crypto policy decides which algorithms OpenSSH is allowed to offer. Before inspecting a handshake, confirm both hosts start from a clean, classical baseline.
+
+Work in the *>_ Client* terminal tab for this exercise.
+
+. Check the active crypto policy on the client host:
++
+[source,bash,role="execute"]
+----
+update-crypto-policies --show
+----
++
+The command prints the name of the currently active policy.
+
+. Confirm the output reads exactly:
++
+[source,text]
+----
+DEFAULT
+----
++
+`DEFAULT` is the standard RHEL 10 policy. It permits secure classical algorithms but does not yet enforce any post-quantum key exchange — that is what you will change in Module 2.
+
+=== Verify
+
+Confirm the client reports the expected baseline before continuing:
+
+[source,bash,role="execute"]
+----
+update-crypto-policies --show
+----
+
+Expected output:
+
+[source,text]
+----
+DEFAULT
+----
+
+If you see `DEFAULT`, the client is on the classical baseline and you are ready to inspect a live handshake.
+
+== Exercise 2: Inspect the Classical SSH Handshake
+
+Now open a connection to the server with verbose logging so OpenSSH prints the full negotiation to your terminal.
+
+. From the *>_ Client* terminal, connect to the server using the `-vv` flag to enable verbose debug output:
++
+[source,bash,role="execute"]
+----
+ssh -vv {ssh_user}@{server_host}
+----
++
+NOTE: The `-vv` flag tells the SSH client to print detailed debug information about each step of the connection, including the algorithms it negotiates. If prompted to accept the server's host key on first connection, type `yes` and press Enter.
+
+. Scroll back through the output and find the line that reports the negotiated key exchange. It begins with `debug1: kex:` and looks similar to this:
++
+[source,text]
+----
+debug1: kex: algorithm: curve25519-sha256
+----
++
+TIP: You can also look for `debug2: KEX algorithms:`, which lists every algorithm the client *offered*. The `debug1: kex: algorithm:` line reports the single algorithm that was actually *chosen*.
+
+. Notice the chosen algorithm — for example `curve25519-sha256` or an `ecdh-`based method. This is a *classical* key exchange. There is no post-quantum component such as `mlkem` or `sntrup` in the name.
+
+. Record the negotiated algorithm name somewhere you can refer back to. This is your baseline value for the comparison in Module 2:
++
+[source,text]
+----
+Baseline (classical) key exchange: ________________________
+----
+
+. Log out of the SSH session to return to the client shell:
++
+[source,bash,role="execute"]
+----
+exit
+----
+
+=== Verify
+
+You have successfully inspected the handshake when:
+
+* The `ssh -vv` output showed a `debug1: kex: algorithm:` line.
+* The negotiated algorithm is a classical method (for example `curve25519-sha256`) with no post-quantum component.
+* You recorded the algorithm name as your baseline.
+* Running `exit` returned you to the client shell prompt.
+
+[.solve-button-placeholder]#solve-button-placeholder#
+[.validate-button-placeholder]#validate-button-placeholder#
+
+== Learning Outcomes Checkpoint
+
+Before moving on, confirm you can answer each of the following:
+
+* *Can you explain the HNDL threat?* An attacker captures encrypted traffic now and decrypts it later, once a capable quantum computer exists — putting long-lived secrets at risk today.
+* *Do you know how to see which key exchange algorithm SSH chose?* Connect with `ssh -vv` and read the `debug1: kex: algorithm:` line.
+* *Can you confirm a host's crypto policy?* Run `update-crypto-policies --show`; both hosts started on `DEFAULT`.
+* *Do you have your baseline?* You recorded the classical key exchange algorithm negotiated under the default policy.
+
+If any of these are unclear, revisit the relevant exercise before continuing.
+
+== Conclusion
+
+You now have a concrete, classical baseline. Both hosts run the RHEL 10 `DEFAULT` crypto policy, and you have seen — in the raw handshake — that SSH negotiates a classical key exchange algorithm that offers no protection against a future quantum computer. That is precisely the exposure the Harvest Now, Decrypt Later threat exploits.
+
+In *Module 2: Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)*, you use the same `update-crypto-policies` tool to enforce a hybrid post-quantum key exchange system-wide, then reconnect and re-inspect the handshake to watch OpenSSH negotiate an ML-KEM-based algorithm instead of the classical baseline you just recorded.
