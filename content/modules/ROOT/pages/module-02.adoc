@@ -1,1 +1,165 @@
 = Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)
+:ssh_user: lab-user
+:server_host: server
+:pq_policy: DEFAULT:TEST-PQ
+
+In Module 1 you recorded a classical baseline: SSH negotiated a quantum-vulnerable key exchange algorithm under the RHEL 10 `DEFAULT` crypto policy. That is the exposure the Harvest Now, Decrypt Later threat exploits.
+
+In this module you close that gap. Using the RHEL 10 system-wide crypto policy, you enforce a *hybrid post-quantum key exchange* so OpenSSH negotiates an ML-KEM (FIPS 203) based algorithm instead of the classical one. Then you reconnect and re-read the raw handshake to prove the change took effect. This is the core *before/after* of the lab.
+
+== Learning Objectives
+
+After completing this module, you will be able to:
+
+* Configure the system-wide crypto policy to enforce hybrid post-quantum (ML-KEM) key exchange for OpenSSH on RHEL 10.
+* Observe the difference between the classical and post-quantum key exchange by re-inspecting the raw SSH handshake with `ssh -vv`.
+* Verify that a new SSH session negotiates the hybrid ML-KEM key exchange.
+
+== Crypto Policies and ML-KEM
+
+RHEL 10 controls which cryptographic algorithms applications like OpenSSH may use through a *system-wide crypto policy*. Instead of editing each service's configuration by hand, an administrator sets one policy and every crypto-aware application follows it. Change the policy once, and the whole system changes with it.
+
+*ML-KEM* (Module-Lattice-Based Key-Encapsulation Mechanism, standardized as FIPS 203) is a post-quantum algorithm designed to resist attacks from both classical and quantum computers. In SSH it is used as part of a *hybrid key exchange*: it is combined with a proven classical method so the session stays secure even if one of the two is later broken. You get post-quantum protection without giving up the assurance of the classical algorithm.
+
+Enforcing this hybrid key exchange directly answers the Harvest Now, Decrypt Later threat: even if an attacker captures your handshake today, the ML-KEM component keeps the derived session key out of reach of a future quantum computer.
+
+== Exercise 1: Apply the Post-Quantum Crypto Policy
+
+The crypto policy that enables ML-KEM hybrid key exchange must be set on the *server*, because the server offers the algorithms that the client selects from. Work in the *>_ Server* terminal tab for this exercise.
+
+. Confirm the server still reports the classical baseline from Module 1:
++
+[source,bash,role="execute"]
+----
+update-crypto-policies --show
+----
++
+Expected output:
++
+[source,text]
+----
+DEFAULT
+----
++
+This is the same classical `DEFAULT` policy you saw in Module 1 — no post-quantum key exchange is enforced yet.
+
+. Apply the crypto policy that enables hybrid post-quantum key exchange system-wide:
++
+[source,bash,role="execute"]
+----
+sudo update-crypto-policies --set {pq_policy}
+----
++
+IMPORTANT: The value after `--set` must be the RHEL 10 post-quantum sub-policy that turns on *ML-KEM hybrid key exchange* (the `DEFAULT:<PQ-subpolicy>` form shown here). If your environment uses a different post-quantum sub-policy name, substitute it — the command shape stays the same. The sub-policy layers post-quantum algorithms on top of the existing `DEFAULT` policy rather than replacing its secure classical defaults.
+
+. Confirm the policy changed:
++
+[source,bash,role="execute"]
+----
+update-crypto-policies --show
+----
++
+The output now reports the post-quantum policy you just set instead of the plain `DEFAULT` baseline.
+
+. Restart the SSH service so new connections use the updated policy:
++
+[source,bash,role="execute"]
+----
+sudo systemctl restart sshd
+----
++
+NOTE: A running service reads the crypto policy when it starts. Restarting `sshd` ensures every new connection negotiates under the new post-quantum policy. Existing sessions are unaffected.
+
+=== Verify
+
+Confirm the server is now on the post-quantum policy before reconnecting:
+
+[source,bash,role="execute"]
+----
+update-crypto-policies --show
+----
+
+The output should report the post-quantum policy you set (no longer plain `DEFAULT`). Confirm `sshd` is active and running:
+
+[source,bash,role="execute"]
+----
+systemctl is-active sshd
+----
+
+Expected output:
+
+[source,text]
+----
+active
+----
+
+If the policy shows the post-quantum value and `sshd` is `active`, the server is ready to negotiate an ML-KEM handshake.
+
+== Exercise 2: Reconnect and Confirm the ML-KEM Handshake
+
+With the server enforcing the post-quantum policy, open a fresh connection and read the handshake again. Switch to the *>_ Client* terminal tab for this exercise.
+
+. From the *>_ Client* terminal, reconnect to the server with verbose logging:
++
+[source,bash,role="execute"]
+----
+ssh -vv {ssh_user}@{server_host}
+----
++
+NOTE: The `-vv` flag prints the full negotiation, just as it did in Module 1. This is a brand-new connection, so it negotiates under the server's new post-quantum policy.
+
+. Scroll back through the output and find the negotiated key exchange line again. It begins with `debug1: kex:` and now names an ML-KEM based hybrid algorithm — the name contains `mlkem`:
++
+[source,text]
+----
+debug1: kex: algorithm: mlkem768x25519-sha256
+----
++
+TIP: The exact algorithm string may differ slightly depending on your build, but a post-quantum hybrid key exchange always contains `mlkem` in the name. The `x25519` portion is the classical half of the hybrid — this is what makes it *hybrid* rather than post-quantum only.
+
+. Compare this value against the classical baseline you recorded in Module 1:
++
+[source,text]
+----
+Module 1 baseline (classical): curve25519-sha256
+Module 2 result (post-quantum): mlkem...x25519-sha256
+----
++
+The `debug1: kex:` line changed from a purely classical algorithm to an ML-KEM hybrid one. That single line is direct, verifiable proof that your policy change altered the negotiated key exchange — the SSH handshake is now protected against Harvest Now, Decrypt Later.
+
+. Log out of the SSH session to return to the client shell:
++
+[source,bash,role="execute"]
+----
+exit
+----
+
+=== Verify
+
+You have successfully enforced and confirmed the post-quantum key exchange when:
+
+* The `ssh -vv` output showed a `debug1: kex: algorithm:` line naming an algorithm that contains `mlkem`.
+* That value differs from the classical baseline (for example `curve25519-sha256`) you recorded in Module 1.
+* Running `exit` returned you to the client shell prompt.
+
+[.solve-button-placeholder]#solve-button-placeholder#
+[.validate-button-placeholder]#validate-button-placeholder#
+
+== Learning Outcomes Checkpoint
+
+Before moving on, confirm you can answer each of the following:
+
+* *Do you know how to change algorithms system-wide?* Run `sudo update-crypto-policies --set <policy>`; one command changes the algorithms every crypto-aware application uses.
+* *What is ML-KEM, and why hybrid?* ML-KEM (FIPS 203) is a post-quantum key-encapsulation method. It is paired with a classical algorithm in a hybrid key exchange so security holds even if one method is broken.
+* *How does this address HNDL?* Enforcing hybrid post-quantum key exchange keeps captured SSH handshakes secure against a future quantum computer.
+* *Can you prove the change?* The `debug1: kex:` line in `ssh -vv` now names an `mlkem` hybrid algorithm instead of the classical baseline from Module 1.
+
+If any of these are unclear, revisit the relevant exercise before continuing.
+
+== Conclusion
+
+You have enforced hybrid post-quantum key exchange system-wide with a single `update-crypto-policies` command, and you proved it worked by reading the raw handshake: SSH now negotiates an ML-KEM based algorithm instead of the classical baseline you recorded in Module 1. Your SSH sessions are protected against the Harvest Now, Decrypt Later threat at the key-exchange layer.
+
+Key exchange is only half of the SSH security story, though. The handshake establishes a shared secret, but *authentication* still relies on your SSH keys — and classical keys such as RSA and Ed25519 are themselves quantum-vulnerable.
+
+In *Module 3: Create and Use Post-Quantum Authentication Keys (ML-DSA)*, you generate a hybrid post-quantum SSH key pair based on ML-DSA (FIPS 204) and authenticate with it, extending post-quantum protection from the key exchange all the way to identity.
