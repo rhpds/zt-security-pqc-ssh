@@ -1,5 +1,58 @@
-= My Lab Title
+= Getting Started with Post-Quantum Cryptography in RHEL 10 OpenSSH
 
-This project was created with the RHDP Publishing House template.
+Quantum computers are coming, and they will break the public-key cryptography that protects most of today's network traffic. You do not have to wait for that day to defend against it. Red Hat Enterprise Linux 10 ships post-quantum cryptography (PQC) support directly in OpenSSH, so you can harden your SSH connections right now using the tools and workflows you already know.
 
-Run `/rhdp-publishing-house` in Claude Code to begin.
+In this hands-on lab you play the role of a system administrator securing SSH on RHEL 10. You start by inspecting a normal, classical SSH handshake. Then you enforce a hybrid post-quantum key exchange system-wide, watch the handshake change, and finish by creating and logging in with a post-quantum authentication key. Everything happens from the command line in about 30 minutes.
+
+== The Threat: Harvest Now, Decrypt Later
+
+Today's SSH connections rely on algorithms like Curve25519 and ECDH to agree on a session key. These are secure against classical computers. They are *not* secure against a large-scale quantum computer.
+
+That gap has a name: *Harvest Now, Decrypt Later* (HNDL).
+
+An attacker who can capture your encrypted traffic does not need to break it today. They record it, store it, and wait. Once a capable quantum computer exists, they decrypt everything they saved. Any data with a long confidentiality lifetime — financial records, health data, state secrets — is at risk the moment it crosses the wire, even if that quantum computer is still years away.
+
+The good news: the fix is already in RHEL 10, and this lab shows you how to use it.
+
+== What You'll Do
+
+This lab is part 1 of a 3-part session, delivered as three short modules:
+
+* *Module 1: Inspect a Classical SSH Session* — Connect from a RHEL 10 client to a server with `ssh -vv` and read the raw handshake to record the default classical key exchange. This is your baseline.
+* *Module 2: Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)* — Use `update-crypto-policies` to enforce a hybrid post-quantum key exchange system-wide, then reconnect and confirm OpenSSH now negotiates an ML-KEM-based algorithm.
+* *Module 3: Create and Use Post-Quantum Authentication Keys (ML-DSA)* — Generate a hybrid post-quantum SSH key pair with `ssh-keygen`, install the public key on the server, and log in with it — verifying post-quantum authentication end to end.
+
+By the end, you will be able to:
+
+* Configure system-wide crypto policies to enforce hybrid post-quantum (ML-KEM) key exchange for OpenSSH on RHEL 10.
+* Observe the difference between classical and post-quantum key exchange by inspecting raw SSH handshake logs (`ssh -vv`).
+* Create and authenticate with a hybrid post-quantum (ML-DSA) SSH key pair on RHEL 10.
+
+== Who This Lab Is For
+
+This lab is written for junior system administrators and anyone new to Linux. It is a beginner-level lab.
+
+You should be comfortable with a few basics before you start:
+
+* Running basic commands in a Linux terminal (`cd`, `ls`, `cat`, and editing a file).
+* Connecting to a host over SSH.
+
+No prior cryptography or post-quantum knowledge is required. Every new concept — HNDL, crypto policies, key exchange, ML-KEM, and ML-DSA — is explained as you go.
+
+== Your Lab Environment
+
+You have your own environment with two Red Hat Enterprise Linux 10 virtual machines:
+
+* A *client* — where you run commands and open SSH connections.
+* A *server* — the host you connect to.
+
+You interact with both machines through two terminal tabs at the side of this screen:
+
+* *>_ Client* — a shell on the client VM. You run most commands here.
+* *>_ Server* — a shell on the server VM, for the few steps that configure the server directly.
+
+Each module tells you which terminal to use. The SSH user on both machines is `rhel`.
+
+Commands shown in a shaded box are ready to run. In this zero-touch environment you can click the command to send it straight to the active terminal — no copy and paste needed.
+
+When you are ready, open *Module 1* from the navigation to inspect your first SSH handshake and see the classical baseline for yourself.
