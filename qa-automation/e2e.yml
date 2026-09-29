@@ -1,13 +1,112 @@
 ---
 # E2E — End-to-end test
-# Runs all module solve + validate sequences to verify the full lab
-# works from start to finish without manual intervention.
+# Verifies the full lab works from start to finish without manual intervention:
+#   Module 2 — enforce hybrid post-quantum (ML-KEM) key exchange system-wide
+#   Module 3 — create an ML-DSA key, install it on the server, and log in with it
+#   Verify   — a new SSH session negotiates ML-KEM kex AND authenticates via the
+#              post-quantum key.
+#
+# This plays the "solve" actions and then asserts the expected end state, so it is
+# independent of the per-module Solve/Validate buttons.
+#
+# Inventory expectations (define these in the lab inventory / Project Zero config):
+#   [clients] — the RHEL 10 client host the learner works from
+#   [servers] — the RHEL 10 server host the learner connects to
+#
+# Exit 0 = the lab is solvable end to end; non-zero = something is broken.
 
-- name: "End-to-End Test"
-  hosts: localhost
-  connection: local
+# ---------------------------------------------------------------------------
+# Tunables — confirm these against the actual RHEL 10 lab image.
+# ---------------------------------------------------------------------------
+# e2e_ssh_user        : lab user account provisioned by step1_pqc_ssh_baseline
+# e2e_pq_policy       : crypto sub-policy that enables ML-KEM hybrid key exchange
+#                       (TODO: confirm the real RHEL 10 sub-policy string)
+# e2e_kex_marker      : substring that must appear in the negotiated kex line
+# e2e_ml_dsa_key_type : ssh-keygen -t type for the ML-DSA key
+#                       (TODO: confirm the real key-type string on the image)
+# e2e_key_file        : path to the ML-DSA private key on the client
+
+- name: "E2E — Solve: enforce hybrid post-quantum key exchange (Module 2)"
+  hosts: servers
+  become: true
   gather_facts: false
+  vars:
+    e2e_pq_policy: "DEFAULT:TEST-PQ"   # TODO: confirm real ML-KEM sub-policy
   tasks:
-    - name: "TODO: Implement end-to-end test sequence"
-      ansible.builtin.debug:
-        msg: "Replace this task with your e2e test implementation"
+    - name: "Read current system-wide crypto policy"
+      ansible.builtin.command: update-crypto-policies --show
+      register: e2e_policy_before
+      changed_when: false
+
+    - name: "Enforce the post-quantum crypto policy"
+      ansible.builtin.command: "update-crypto-policies --set {{ e2e_pq_policy }}"
+      when: e2e_policy_before.stdout | trim != e2e_pq_policy
+      notify: Restart sshd
+
+    - name: "Confirm the crypto policy is now the post-quantum policy"
+      ansible.builtin.command: update-crypto-policies --show
+      register: e2e_policy_after
+      changed_when: false
+      failed_when: e2e_policy_after.stdout | trim != e2e_pq_policy
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+- name: "E2E — Solve + verify: ML-DSA authentication and ML-KEM handshake (Module 3)"
+  hosts: clients
+  gather_facts: false
+  vars:
+    e2e_ssh_user: rhel
+    e2e_ml_dsa_key_type: "ml-dsa-65"          # TODO: confirm real ML-DSA key type
+    e2e_key_file: "/home/{{ e2e_ssh_user }}/.ssh/id_mldsa_e2e"
+    e2e_kex_marker: "mlkem"                    # negotiated kex must contain this
+    e2e_server_host: "{{ groups['servers'][0] }}"
+  tasks:
+    - name: "Generate a fresh ML-DSA key pair (no passphrase)"
+      ansible.builtin.command:
+        cmd: "ssh-keygen -t {{ e2e_ml_dsa_key_type }} -N '' -f {{ e2e_key_file }}"
+        creates: "{{ e2e_key_file }}"
+      become: true
+      become_user: "{{ e2e_ssh_user }}"
+
+    - name: "Install the ML-DSA public key on the server"
+      ansible.posix.authorized_key:
+        user: "{{ e2e_ssh_user }}"
+        key: "{{ lookup('file', e2e_key_file + '.pub') }}"
+        state: present
+      delegate_to: "{{ e2e_server_host }}"
+      become: true
+
+    - name: "Connect to the server with the ML-DSA key and capture the handshake"
+      ansible.builtin.command:
+        cmd: >-
+          ssh -vv
+          -i {{ e2e_key_file }}
+          -o BatchMode=yes
+          -o StrictHostKeyChecking=no
+          -o PasswordAuthentication=no
+          {{ e2e_ssh_user }}@{{ e2e_server_host }}
+          hostname
+      become: true
+      become_user: "{{ e2e_ssh_user }}"
+      register: e2e_ssh
+      changed_when: false
+
+    - name: "Assert the session negotiated an ML-KEM hybrid key exchange"
+      ansible.builtin.assert:
+        that:
+          - e2e_ssh.stderr is search('debug1: kex: .*' ~ e2e_kex_marker)
+        success_msg: "Key exchange negotiated a post-quantum (ML-KEM) algorithm."
+        fail_msg: >-
+          Negotiated key exchange does not contain '{{ e2e_kex_marker }}'.
+          The crypto policy may not enforce ML-KEM. See 'debug1: kex:' in the output.
+
+    - name: "Assert authentication succeeded via the post-quantum public key"
+      ansible.builtin.assert:
+        that:
+          - e2e_ssh.stderr is search('Authentication succeeded \(publickey\)')
+        success_msg: "Authenticated to the server using the ML-DSA post-quantum key."
+        fail_msg: "Public-key (ML-DSA) authentication to the server did not succeed."
