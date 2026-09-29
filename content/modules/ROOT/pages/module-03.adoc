@@ -1,1 +1,168 @@
 = Create and Use Post-Quantum Authentication Keys (ML-DSA)
+:ssh_user: lab-user
+:server_host: server
+:key_type: ml-dsa-65
+:key_file: ~/.ssh/id_mldsa
+
+In Module 2 you enforced a hybrid post-quantum key exchange, so SSH now establishes its shared secret with an ML-KEM (FIPS 203) algorithm instead of a classical one. That protects the *session*. It does not, on its own, protect *who you are*.
+
+Authentication is the other half of the SSH story. When you log in with a key, the server verifies a digital signature made by your private key. Classical signature keys — RSA and Ed25519 — are themselves quantum-vulnerable. In this final module you close that gap: you generate a hybrid post-quantum SSH key pair based on *ML-DSA* (FIPS 204), install its public key on the server, and authenticate with it. By the end, both the key exchange and the login are protected against a future quantum computer, using only standard RHEL 10 command-line tools.
+
+== Learning Objectives
+
+After completing this module, you will be able to:
+
+* Create a hybrid post-quantum (ML-DSA) SSH key pair on RHEL 10 using `ssh-keygen`.
+* Configure the server to trust the new public key and authenticate to it with the ML-DSA key pair.
+* Verify successful post-quantum authentication by inspecting the `ssh -vv` client output.
+
+== Why Authentication Also Needs Post-Quantum Protection
+
+The key exchange you enforced in Module 2 protects the confidentiality of the session — it keeps the data you send from being read, now or later. Authentication answers a different question: *how does the server know it is really you?*
+
+When you log in with an SSH key, your client signs a challenge with your *private* key, and the server checks that signature against the *public* key it trusts. The security of that proof rests entirely on the signature algorithm. If the algorithm is quantum-vulnerable, a future quantum computer could forge your signature and impersonate you.
+
+*ML-DSA* (Module-Lattice-Based Digital Signature Algorithm, standardized as FIPS 204) is a post-quantum digital signature algorithm. Used as an SSH authentication key, it resists forgery by both classical and quantum computers. Best of all, you create and deploy it with the exact same `ssh-keygen` and `ssh-copy-id` workflow you already know for classical keys — only the key type changes.
+
+== Exercise 1: Generate an ML-DSA Key Pair
+
+You generate the key pair on the client, because the private key must stay with you. Work in the *>_ Client* terminal tab for this exercise.
+
+. Generate a hybrid post-quantum authentication key pair with `ssh-keygen`, specifying the ML-DSA key type and a clear file name:
++
+[source,bash,role="execute"]
+----
+ssh-keygen -t {key_type} -f {key_file} -N ""
+----
++
+IMPORTANT: The key type after `-t` (`{key_type}`) is a *representative, to-be-confirmed* value for the ML-DSA post-quantum signature algorithm. The exact string may differ on your RHEL 10 image. If `ssh-keygen` reports an unknown key type, run `ssh-keygen -Q key` (or check `man ssh-keygen`) to list the supported types, then substitute the correct ML-DSA / `ssh-mldsa`-style name. The command shape stays the same — only the value after `-t` changes.
++
+NOTE: The `-f` flag sets the output file name and `-N ""` creates the key with no passphrase, which keeps this lab focused on the algorithm. In production you would protect a private key with a strong passphrase.
+
+. List the files `ssh-keygen` created. You should see both the private key and a matching `.pub` public key:
++
+[source,bash,role="execute"]
+----
+ls -l {key_file} {key_file}.pub
+----
++
+Expected output (paths and sizes may vary):
++
+[source,text]
+----
+-rw-------. 1 lab-user lab-user  ... /home/lab-user/.ssh/id_mldsa
+-rw-r--r--. 1 lab-user lab-user  ... /home/lab-user/.ssh/id_mldsa.pub
+----
+
+. Look at the public key itself. The type prefix at the start of the line identifies it as an ML-DSA post-quantum key:
++
+[source,bash,role="execute"]
+----
+cat {key_file}.pub
+----
++
+TIP: The first field of the line is the key type — this is the same string you passed to `-t`. Seeing it here confirms `ssh-keygen` produced a post-quantum ML-DSA key rather than a classical RSA or Ed25519 key.
+
+=== Verify
+
+Confirm the key pair exists before installing it:
+
+[source,bash,role="execute"]
+----
+ls {key_file} {key_file}.pub && echo "ML-DSA key pair created"
+----
+
+You are ready to continue when:
+
+* Both `{key_file}` and `{key_file}.pub` are listed.
+* The private key file has permissions `-rw-------` (readable only by you).
+* `cat {key_file}.pub` shows an ML-DSA key type prefix.
+
+== Exercise 2: Install the Public Key and Log In With It
+
+Now you tell the server to trust your new public key, then authenticate with the matching private key. Work in the *>_ Client* terminal tab for this exercise.
+
+. Copy the public key to the server's authorized keys with `ssh-copy-id`:
++
+[source,bash,role="execute"]
+----
+ssh-copy-id -i {key_file}.pub {ssh_user}@{server_host}
+----
++
+NOTE: `ssh-copy-id` connects to the server and appends your public key to `~/.ssh/authorized_keys` there. Because your ML-DSA key is not trusted yet, this first connection authenticates with your password — enter it if prompted. This is the *only* password prompt you should see; every login afterward uses the key.
+
+. Authenticate to the server using your new ML-DSA private key, with verbose logging so you can watch the key being offered and accepted:
++
+[source,bash,role="execute"]
+----
+ssh -vv -i {key_file} {ssh_user}@{server_host}
+----
++
+NOTE: The `-i` flag tells the client to use this specific key, and `-vv` prints the full authentication exchange. You should *not* be prompted for a password — the login now succeeds with the post-quantum key.
+
+. Scroll back through the output and find the lines where the client offers your ML-DSA key and the server accepts it. They look similar to this:
++
+[source,text]
+----
+debug1: Offering public key: /home/lab-user/.ssh/id_mldsa ML-DSA ...
+debug1: Server accepts key: /home/lab-user/.ssh/id_mldsa ML-DSA ...
+debug1: Authentication succeeded (publickey).
+----
++
+TIP: The exact wording depends on your build, but the key phrase to confirm is `Authentication succeeded (publickey)` — *not* `(password)`. The `Offering` and `Server accepts key` lines naming your ML-DSA key are proof that the post-quantum key, not a password or a classical key, authenticated you.
+
+. Confirm you are logged in on the server:
++
+[source,bash,role="execute"]
+----
+hostname
+----
++
+The command prints the server's host name, confirming the shell is running on the remote server.
+
+. Log out to return to the client shell:
++
+[source,bash,role="execute"]
+----
+exit
+----
+
+. *Optional:* reconnect once more and note that *both* post-quantum protections are now active together — the ML-KEM hybrid key exchange from Module 2 and your ML-DSA authentication from this module:
++
+[source,bash,role="execute"]
+----
+ssh -vv -i {key_file} {ssh_user}@{server_host} 'echo Post-quantum SSH end-to-end'
+----
++
+In the verbose output you should see an `mlkem` key exchange on the `debug1: kex:` line (Module 2) *and* the ML-DSA key accepted on the authentication lines (this module). The connection is post-quantum from handshake to login.
+
+=== Verify
+
+You have successfully authenticated with the post-quantum key when:
+
+* `ssh-copy-id` reported that it added your key (one password prompt only).
+* `ssh -vv -i {key_file} ...` logged in *without* prompting for a password.
+* The verbose output showed `Authentication succeeded (publickey)` with your ML-DSA key named on the offer/accept lines.
+* `hostname` returned the server's name, and `exit` returned you to the client shell.
+
+[.solve-button-placeholder]#solve-button-placeholder#
+[.validate-button-placeholder]#validate-button-placeholder#
+
+== Learning Outcomes Checkpoint
+
+Before finishing, confirm you can answer each of the following:
+
+* *Why does authentication need post-quantum protection too?* The key exchange protects the session, but authentication proves identity through a digital signature — and classical signature keys (RSA, Ed25519) are quantum-vulnerable.
+* *What is ML-DSA?* ML-DSA (FIPS 204) is a post-quantum digital signature algorithm you can use directly as an SSH key type through the familiar `ssh-keygen` workflow.
+* *How do you deploy and use it?* Generate the pair with `ssh-keygen -t <ml-dsa-type>`, install the public key with `ssh-copy-id`, and connect with `ssh -i <key>`.
+* *How do you prove the login was post-quantum?* The `ssh -vv` output names your ML-DSA key on the offer/accept lines and reports `Authentication succeeded (publickey)` — verifiable proof, not a password fallback.
+
+If any of these are unclear, revisit the relevant exercise.
+
+== Conclusion
+
+You have completed the post-quantum SSH story end to end. In Module 1 you inspected a classical handshake and recorded the quantum-vulnerable baseline. In Module 2 you enforced a hybrid ML-KEM (FIPS 203) key exchange so the session secret resists Harvest Now, Decrypt Later. In this module you generated a hybrid ML-DSA (FIPS 204) authentication key and logged in with it, so your *identity* is protected by post-quantum cryptography as well.
+
+Both halves of the connection are now covered: the ML-KEM hybrid key exchange protects the session, and the ML-DSA key protects the login. And you did it all with the standard RHEL 10 tools you already use every day — `update-crypto-policies`, `ssh-keygen`, `ssh-copy-id`, and `ssh`. That familiarity is the point: adopting post-quantum cryptography on RHEL 10 does not require new workflows, only the awareness to choose post-quantum algorithms and the ability to verify they are in use.
+
+For a recap of everything you built and pointers to Red Hat's post-quantum documentation, see the lab wrap-up.
