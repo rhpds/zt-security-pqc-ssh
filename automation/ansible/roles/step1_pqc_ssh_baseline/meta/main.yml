@@ -1,0 +1,8 @@
+#SPDX-License-Identifier: MIT-0
+galaxy_info:
+  author: jloscar@redhat.com
+  description: Provision the RHEL 10 client/server baseline for the PQC SSH lab — create the rhel SSH user account, lay down a baseline sshd_config, and ensure the DEFAULT system-wide crypto policy so learners start from a clean classical baseline.
+  license: GPL-2.0-or-later
+  min_ansible_version: 2.9
+  galaxy_tags: []
+dependencies: []
