@@ -98,7 +98,7 @@
     - name: "Assert the session negotiated an ML-KEM hybrid key exchange"
       ansible.builtin.assert:
         that:
-          - e2e_ssh.stderr is search('debug1: kex: .*' ~ e2e_kex_marker)
+          - "e2e_ssh.stderr is search('debug1: kex:.*' ~ e2e_kex_marker)"
         success_msg: "Key exchange negotiated a post-quantum (ML-KEM) algorithm."
         fail_msg: >-
           Negotiated key exchange does not contain '{{ e2e_kex_marker }}'.
@@ -107,6 +107,6 @@
     - name: "Assert authentication succeeded via the post-quantum public key"
       ansible.builtin.assert:
         that:
-          - e2e_ssh.stderr is search('Authentication succeeded \(publickey\)')
+          - "'Authentication succeeded (publickey)' in e2e_ssh.stderr"
         success_msg: "Authenticated to the server using the ML-DSA post-quantum key."
         fail_msg: "Public-key (ML-DSA) authentication to the server did not succeed."
