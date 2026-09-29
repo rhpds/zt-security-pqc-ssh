@@ -1,3 +1,65 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for step1_pqc_ssh_baseline
+# Provisions the RHEL 10 client/server baseline for the PQC SSH lab.
+
+- name: Ensure OpenSSH server is installed
+  ansible.builtin.package:
+    name: openssh-server
+    state: present
+
+- name: Ensure the lab user account exists
+  ansible.builtin.user:
+    name: "{{ pqc_ssh_user }}"
+    groups: "{{ pqc_ssh_user_groups }}"
+    append: true
+    state: present
+
+- name: Grant the lab user passwordless sudo
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/{{ pqc_ssh_user }}"
+    content: "{{ pqc_ssh_user }} ALL=(ALL) NOPASSWD:ALL\n"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when: pqc_ssh_user_passwordless_sudo | bool
+
+- name: Pre-install authorized keys for the lab user
+  ansible.posix.authorized_key:
+    user: "{{ pqc_ssh_user }}"
+    key: "{{ item }}"
+    state: present
+  loop: "{{ pqc_ssh_authorized_keys }}"
+  loop_control:
+    label: "{{ item.split() | last | default(item) }}"
+  when: pqc_ssh_authorized_keys | length > 0
+
+- name: Lay down the baseline sshd configuration
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/10-pqc-ssh-lab.conf
+    content: |
+      # Managed by step1_pqc_ssh_baseline — PQC SSH lab baseline
+      PasswordAuthentication {{ 'yes' if pqc_sshd_password_authentication | bool else 'no' }}
+      PubkeyAuthentication {{ 'yes' if pqc_sshd_pubkey_authentication | bool else 'no' }}
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "sshd -t -f %s"
+  notify: Restart sshd
+
+- name: Read the current system-wide crypto policy
+  ansible.builtin.command: update-crypto-policies --show
+  register: pqc_current_crypto_policy
+  changed_when: false
+
+- name: Enforce the baseline system-wide crypto policy
+  ansible.builtin.command: "update-crypto-policies --set {{ pqc_ssh_crypto_policy }}"
+  when: pqc_current_crypto_policy.stdout | trim != pqc_ssh_crypto_policy
+  notify: Restart sshd
+
+- name: Ensure sshd is enabled and running
+  ansible.builtin.service:
+    name: sshd
+    state: started
+    enabled: true

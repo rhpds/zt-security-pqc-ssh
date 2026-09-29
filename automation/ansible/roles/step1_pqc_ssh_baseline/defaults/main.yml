@@ -1,3 +1,29 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for step1_pqc_ssh_baseline
+
+# SSH lab user account created on both client and server hosts.
+pqc_ssh_user: rhel
+
+# Supplementary groups for the lab user. 'wheel' grants sudo on RHEL.
+pqc_ssh_user_groups:
+  - wheel
+
+# Grant the lab user passwordless sudo (needed for Module 2:
+# update-crypto-policies and 'systemctl restart sshd').
+pqc_ssh_user_passwordless_sudo: true
+
+# Optional: public keys to pre-install in the lab user's authorized_keys.
+# Leave empty so learners install their own ML-DSA key in Module 3.
+# Example entry:
+#   - "ssh-ed25519 AAAA... learner@example"
+pqc_ssh_authorized_keys: []
+
+# System-wide crypto policy the hosts must start from (the classical
+# baseline learners change in Module 2).
+pqc_ssh_crypto_policy: DEFAULT
+
+# Baseline sshd settings. Password auth stays on so learners can run
+# ssh-copy-id in Module 3; pubkey auth is on for ML-DSA login.
+pqc_sshd_password_authentication: true
+pqc_sshd_pubkey_authentication: true
