@@ -1,15 +1,65 @@
 ---
 # HEALTHCHECK — Quick environment readiness check
-# Runs post-provisioning to verify the lab environment is functional.
-# Should complete in under 60 seconds.
+# Runs post-provisioning to verify the lab environment is functional and that
+# learners start from a clean classical baseline. Completes in under 60 seconds.
+#
+# Checks (on every RHEL 10 lab host — clients and servers):
+#   - host is reachable
+#   - openssh-server is installed and sshd is running
+#   - the lab user account exists
+#   - the system-wide crypto policy is the classical DEFAULT baseline
+#     (so learners begin from the "before" state — they enforce PQC in Module 2)
 #
 # Exit 0 = healthy, non-zero = unhealthy.
+#
+# Tunables:
+#   hc_ssh_user            : lab user provisioned by step1_pqc_ssh_baseline
+#   hc_expected_crypto_policy : baseline policy learners start from
 
 - name: "Environment Health Check"
-  hosts: localhost
-  connection: local
+  hosts: all
   gather_facts: false
+  vars:
+    hc_ssh_user: rhel
+    hc_expected_crypto_policy: DEFAULT
   tasks:
-    - name: "TODO: Implement health checks"
-      ansible.builtin.debug:
-        msg: "Replace this task with checks that verify the environment is ready"
+    - name: "Host is reachable"
+      ansible.builtin.ping:
+
+    - name: "OpenSSH server package is installed"
+      ansible.builtin.command: rpm -q openssh-server
+      register: hc_openssh
+      changed_when: false
+      failed_when: hc_openssh.rc != 0
+
+    - name: "sshd service is running"
+      ansible.builtin.service_facts:
+
+    - name: "Assert sshd is running"
+      ansible.builtin.assert:
+        that:
+          - "'sshd.service' in ansible_facts.services"
+          - ansible_facts.services['sshd.service'].state == 'running'
+        success_msg: "sshd is running."
+        fail_msg: "sshd is not running — learners cannot connect."
+
+    - name: "Lab user account exists"
+      ansible.builtin.command: "id {{ hc_ssh_user }}"
+      register: hc_user
+      changed_when: false
+      failed_when: hc_user.rc != 0
+
+    - name: "Read the system-wide crypto policy"
+      ansible.builtin.command: update-crypto-policies --show
+      register: hc_crypto_policy
+      changed_when: false
+
+    - name: "Assert the crypto policy is the classical baseline"
+      ansible.builtin.assert:
+        that:
+          - hc_crypto_policy.stdout | trim == hc_expected_crypto_policy
+        success_msg: "Crypto policy is '{{ hc_expected_crypto_policy }}' — clean classical baseline."
+        fail_msg: >-
+          Crypto policy is '{{ hc_crypto_policy.stdout | trim }}', expected
+          '{{ hc_expected_crypto_policy }}'. Learners must start from the classical
+          baseline before enforcing PQC in Module 2.
