@@ -33,7 +33,7 @@ spec:
   - id: module-02
     title: "Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)"
     duration_min: 12
-    status: in_progress
+    status: complete
   - id: module-03
     title: "Create and Use Post-Quantum Authentication Keys (ML-DSA)"
     duration_min: 10
