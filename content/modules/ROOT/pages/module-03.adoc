@@ -1,5 +1,5 @@
 = Create and Use Post-Quantum Authentication Keys (ML-DSA)
-:ssh_user: lab-user
+:ssh_user: rhel
 :server_host: server
 :key_type: ml-dsa-65
 :key_file: ~/.ssh/id_mldsa
@@ -50,8 +50,8 @@ Expected output (paths and sizes may vary):
 +
 [source,text]
 ----
--rw-------. 1 lab-user lab-user  ... /home/lab-user/.ssh/id_mldsa
--rw-r--r--. 1 lab-user lab-user  ... /home/lab-user/.ssh/id_mldsa.pub
+-rw-------. 1 rhel rhel  ... /home/rhel/.ssh/id_mldsa
+-rw-r--r--. 1 rhel rhel  ... /home/rhel/.ssh/id_mldsa.pub
 ----
 
 . Look at the public key itself. The type prefix at the start of the line identifies it as an ML-DSA post-quantum key:
@@ -104,8 +104,8 @@ NOTE: The `-i` flag tells the client to use this specific key, and `-vv` prints 
 +
 [source,text]
 ----
-debug1: Offering public key: /home/lab-user/.ssh/id_mldsa ML-DSA ...
-debug1: Server accepts key: /home/lab-user/.ssh/id_mldsa ML-DSA ...
+debug1: Offering public key: /home/rhel/.ssh/id_mldsa ML-DSA ...
+debug1: Server accepts key: /home/rhel/.ssh/id_mldsa ML-DSA ...
 debug1: Authentication succeeded (publickey).
 ----
 +

@@ -1,5 +1,5 @@
 = Inspect a Classical SSH Session
-:ssh_user: lab-user
+:ssh_user: rhel
 :server_host: server
 
 Every SSH connection begins with a negotiation. Before a single byte of your session is protected, the client and the server agree on a *key exchange algorithm* — the math that lets them establish a shared secret over an untrusted network. On Red Hat Enterprise Linux 10, that choice is governed by the system-wide crypto policy.

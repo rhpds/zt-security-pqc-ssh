@@ -1,5 +1,5 @@
 = Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)
-:ssh_user: lab-user
+:ssh_user: rhel
 :server_host: server
 :pq_policy: DEFAULT:TEST-PQ
 
