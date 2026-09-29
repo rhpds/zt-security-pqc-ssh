@@ -1,7 +1,7 @@
 ---
 site:
-  title: My Project
-  url: https://github.com/rhpds/my-project
+  title: Getting Started with Post-Quantum Cryptography in RHEL 10 OpenSSH
+  url: https://github.com/rhpds/zt-security-pqc-ssh
   start_page: modules::index.adoc
 
 content:

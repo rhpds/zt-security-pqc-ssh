@@ -1,1 +1,4 @@
 * xref:index.adoc[Lab Overview]
+* xref:module-01.adoc[Module 1: Inspect a Classical SSH Session]
+* xref:module-02.adoc[Module 2: Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)]
+* xref:module-03.adoc[Module 3: Create and Use Post-Quantum Authentication Keys (ML-DSA)]
