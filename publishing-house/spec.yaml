@@ -37,7 +37,7 @@ spec:
   - id: module-03
     title: "Create and Use Post-Quantum Authentication Keys (ML-DSA)"
     duration_min: 10
-    status: not_started
+    status: in_progress
   environment:
     platform: "rhel-vms"       # ocp | rhel-vms — determines which sizing fields apply
     topology: "per-student"    # shared-cluster | per-student | cnv-pool
