@@ -1,0 +1,44 @@
+= Conclusion and Next Steps
+
+Congratulations — you have made both halves of an SSH connection on Red Hat Enterprise Linux 10 resistant to a future quantum computer, using only the standard command-line tools you already work with every day.
+
+You started with the threat that makes this work urgent: *Harvest Now, Decrypt Later* (HNDL). An attacker does not need to break your encryption today. They can capture your traffic now, store it, and decrypt it later once a capable quantum computer exists. Over three short modules you moved from that vulnerable classical baseline to a connection that is post-quantum from handshake to login.
+
+== What You've Learned
+
+Across the three modules of this lab, you learned how to:
+
+* *Inspect a real SSH handshake.* Using `ssh -vv`, you read the `debug1: kex:` line to see exactly which key exchange algorithm two RHEL 10 hosts negotiated — and confirmed they started on the classical `DEFAULT` crypto policy.
+* *Enforce hybrid post-quantum key exchange.* With a single `update-crypto-policies` command, you changed the algorithms used system-wide and verified that OpenSSH now negotiates a hybrid *ML-KEM* (FIPS 203) key exchange instead of a classical one.
+* *Observe classical versus post-quantum handshakes.* You compared the `ssh -vv` output before and after the policy change, so you can prove — not just assume — which algorithm is in use on any connection.
+* *Create and use a post-quantum authentication key.* You generated a hybrid *ML-DSA* (FIPS 204) key pair with `ssh-keygen`, installed it with `ssh-copy-id`, and logged in with it — then confirmed the post-quantum key authenticated you by reading the offer and accept lines in the verbose output.
+
+== The End-to-End Post-Quantum Story
+
+Each module built on the one before it. Put the pieces together and you can see the full arc:
+
+. *The threat (HNDL).* Classical key exchange algorithms like Curve25519 are safe against today's computers but not against a large-scale quantum one. Traffic captured now can be decrypted later.
+. *The baseline (Module 1).* You inspected a normal SSH session and recorded the classical key exchange both hosts negotiated by default. This is what needs protecting.
+. *The key exchange (Module 2).* You enforced a hybrid ML-KEM key exchange through system-wide crypto policies, so the *session secret* resists Harvest Now, Decrypt Later. The confidentiality of your data is covered.
+. *The authentication (Module 3).* You generated and logged in with an ML-DSA key, so your *identity* is protected by a post-quantum signature that cannot be forged by a quantum computer.
+
+With both the key exchange and the authentication protected, your SSH connection is quantum-resistant end to end — and you got there using only `update-crypto-policies`, `ssh-keygen`, `ssh-copy-id`, and `ssh`. That is the real lesson: adopting post-quantum cryptography on RHEL 10 does not require new workflows. It requires the awareness to choose post-quantum algorithms and the ability to verify they are in use.
+
+== Where to Go From Here
+
+This lab is part 1 of a 3-part Red Hat Summit session on post-quantum security. You have the SSH building blocks; here is how to take them further.
+
+* *Apply crypto policies at scale.* In this lab you ran `update-crypto-policies` on one host. In a real estate you would roll the same policy out to every system — for example with a RHEL System Role or Ansible — so post-quantum defaults are enforced consistently across the fleet.
+* *Look beyond SSH.* System-wide crypto policies affect many applications, not just OpenSSH. Review how the same policy influences TLS, your web servers, and other services, and plan which workloads need post-quantum protection first based on the confidentiality lifetime of their data.
+* *Build a migration plan.* Identify the long-lived, high-value data in your environment — the records most exposed to HNDL — and prioritize moving those connections to post-quantum algorithms.
+* *Explore RHEL 10 security hardening.* Continue with the broader RHEL 10 security hardening documentation to combine post-quantum cryptography with the rest of your defense-in-depth strategy.
+
+== References
+
+* Red Hat Enterprise Linux 10 — Security hardening documentation: https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10
+* Using system-wide cryptographic policies (`update-crypto-policies`): https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening
+* NIST FIPS 203 — Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM): https://csrc.nist.gov/pubs/fips/203/final
+* NIST FIPS 204 — Module-Lattice-Based Digital Signature Standard (ML-DSA): https://csrc.nist.gov/pubs/fips/204/final
+* OpenSSH manual pages: `man ssh`, `man ssh-keygen`, `man update-crypto-policies`
+
+Thank you for completing *Getting Started with Post-Quantum Cryptography in RHEL 10 OpenSSH*. When you are ready, continue to the next part of the session to build on what you learned here.
