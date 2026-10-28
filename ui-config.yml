@@ -1,23 +1,24 @@
 ---
+
 antora:
   name: modules
   dir: www
   modules:
-    - name: index
-      label: "Introduction"
     - name: module-01
-      label: "Module 1: Inspect a Classical SSH Session"
+      label: "About This Lab"
+      solveButton: false
     - name: module-02
-      label: "Module 2: Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)"
+      label: "Your Post-Quantum Foundation"
+      solveButton: false
     - name: module-03
-      label: "Module 3: Create and Use Post-Quantum Authentication Keys (ML-DSA)"
+      label: "A Post-Quantum SSH Connection"
+      solveButton: false
+    - name: module-04
+      label: "Require Post-Quantum SSH"
+      solveButton: false
 
 tabs:
-  - name: ">_ Client"
+  - name: ">_ terminal"
     path: /wetty
     port: 443
-  - name: ">_ Server"
-    path: /terminal2
-    port: 443
-  - name: Crypto Policies Docs
-    url: 'https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening'
+

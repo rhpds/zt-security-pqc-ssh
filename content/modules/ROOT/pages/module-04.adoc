@@ -1,0 +1,112 @@
+= Require Post-Quantum SSH
+
+In the previous module, `node1` accepted both post-quantum and classical key exchanges. For a
+high-value server you may want to *mandate* post-quantum key exchange so that no client can
+fall back to a quantum-vulnerable algorithm. In this capstone you will configure `node1`'s SSH
+server to require `mlkem768x25519-sha256`, then verify it.
+
+[IMPORTANT]
+====
+You will edit `node1`'s SSH server configuration. Follow the steps in order and *always test
+the config before restarting sshd* — a bad sshd config can lock you out. These steps use a
+safe drop-in file and a config test, so you can recover easily.
+====
+
+== Step 1 — Connect to node1
+
+[source,bash,role=execute]
+----
+ssh node1
+----
+
+You are now on *node1*. The remaining steps run here until you are told to exit.
+
+== Step 2 — Create an sshd drop-in that requires post-quantum KEX
+
+RHEL's sshd reads drop-in files from `/etc/ssh/sshd_config.d/`. Create one that allows *only*
+the post-quantum key exchange. The `01-` prefix ensures it is read first, so its setting wins:
+
+[source,bash,role=execute]
+----
+echo "KexAlgorithms mlkem768x25519-sha256" | sudo tee /etc/ssh/sshd_config.d/01-pqc-required.conf
+----
+
+== Step 3 — Test the configuration before applying it
+
+Always validate sshd syntax before restarting:
+
+[source,bash,role=execute]
+----
+sudo sshd -t && echo "sshd config OK"
+----
+
+If you see `sshd config OK`, it is safe to proceed. (If not, remove the file with
+`sudo rm /etc/ssh/sshd_config.d/01-pqc-required.conf` and try again.)
+
+== Step 4 — Apply the change
+
+[source,bash,role=execute]
+----
+sudo systemctl restart sshd
+----
+
+Now return to the `rhel` bastion:
+
+[source,bash,role=execute]
+----
+exit
+----
+
+== Step 5 — Verify a post-quantum connection still works
+
+From `rhel`, make a normal connection. It should still succeed, because the default key
+exchange is already post-quantum:
+
+[source,bash,role=execute]
+----
+ssh node1 hostname
+----
+
+It prints `node1` — success.
+
+== Step 6 — Verify a classical-only client is now rejected
+
+Try to connect using *only* a classical key exchange. This time it must *fail*, because
+`node1` no longer offers any classical option:
+
+[source,bash,role=execute]
+----
+ssh -o KexAlgorithms=curve25519-sha256 node1 hostname
+----
+
+You should see an error like:
+
+[source,text]
+----
+Unable to negotiate with <node1>: no matching key exchange method found.
+Their offer: mlkem768x25519-sha256
+----
+
+[IMPORTANT]
+====
+That rejection is the goal. `node1` now *requires* post-quantum key exchange: every SSH
+session to it is protected against "harvest now, decrypt later," and quantum-vulnerable
+fallbacks are refused.
+====
+
+== You did it
+
+On Red Hat Enterprise Linux 10 you have:
+
+* Understood the quantum threat and why SSH needs post-quantum protection *now*.
+* Confirmed PQC is built into the `DEFAULT` crypto-policy and OpenSSH (`mlkem768x25519-sha256`).
+* Proven a real `rhel` → `node1` SSH session negotiated the ML-KEM key exchange.
+* Hardened `node1` to *require* post-quantum key exchange and verified classical clients are refused.
+
+[TIP]
+====
+*Taking this further:* apply the same `KexAlgorithms` drop-in across your fleet with Ansible,
+and consider the matching `Ciphers`/`MACs` hardening. To relax the requirement again, remove
+`/etc/ssh/sshd_config.d/01-pqc-required.conf` on node1 and restart sshd — the system returns
+to accepting both post-quantum and classical key exchange.
+====
