@@ -12,7 +12,7 @@ virtualmachines:
     networks:
       - default
   - name: "node1"
-    image: "rhel-10-1-04-15-26"
+    image: "rhel-10-1-11-13-25"
     bootloader: efi
     memory: "4G"
     cores: 1
