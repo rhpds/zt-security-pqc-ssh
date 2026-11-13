@@ -17,3 +17,20 @@ virtualmachines:
         value: "bastions"
     networks:
       - default
+  - name: "client1"
+    image: "rhel-10-2-eus-06-08-26"
+    bootloader: efi
+    memory: "4G"
+    cores: 1
+    image_size: "40G"
+    packages:
+      - tree
+      - tmux
+      - git
+      - vim
+      - mkpasswd
+    tags:
+      - key: "AnsibleGroup"
+        value: "nodes"
+    networks:
+      - default   
