@@ -54,39 +54,33 @@ enforce it.
 
 == Lab Environment
 
-As part of this lab you will have access to 2 machines:
+As part of this lab you will have access to 1 machine:
 
 * rhel
-* node1
 
-* **Operating System**: Red Hat Enterprise Linux 10
-* **Estimated Time**: Approximately 30 minutes
-
-You will work from *rhel* (your bastion) and connect to *node1* over SSH.
+* **Operating System**: Red Hat Enterprise Linux 10.1+
+* **Required Packages**: `audit`, `audit-libs` (pre-installed)
+* **Estimated Time**: 30 minutes
 
 === Environment Diagram
 
 [source,text]
 ----
-                             Lab Environment
-    ┌───────────────────────────────────────────────────────────────────┐
-    │                                                                   │
-    │   ┌──────────────┐          post-quantum            ┌───────────┐ │
-    │   │   bastion    │           SSH (ML-KEM)           │  server   │ │
-    │   │     rhel     │ ──────────────────────────────▶ │   node1   │ │
-    │   └──────────────┘                                  └───────────┘ │
-    │                                                                   │
-    └───────────────────────────────────────────────────────────────────┘
+                         Lab Environment
+    ┌──────────────────────────────────────────────────────┐
+    │                                                      │
+    │   ┌──────────────┐                                   │
+    │   │   bastion    │                                   │
+    │   │              │                                   │
+    │   │    rhel      │                                   │
+    │   └──────────────┘                                   │
+    │                                                      │
+    └──────────────────────────────────────────────────────┘
 ----
 
 You will have a couple of accounts you will have access to.
 
 *rhel*
-
-* rhel
-* root
-
-*node1*
 
 * rhel
 * root
