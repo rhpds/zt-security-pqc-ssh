@@ -71,7 +71,7 @@ in order of preference:
 
 [source,bash,role=execute]
 ----
-ssh -G node1 | grep -i kexalgorithms
+ssh -G localhost | grep -i kexalgorithms
 ----
 
 `mlkem768x25519-sha256` appears *first* in the list, which means SSH will try the
