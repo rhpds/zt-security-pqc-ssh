@@ -17,7 +17,7 @@ virtualmachines:
         value: "bastions"
     networks:
       - default
-  - name: "client1"
+  - name: "node1"
     image: "rhel-10-2-eus-06-08-26"
     bootloader: efi
     memory: "4G"
