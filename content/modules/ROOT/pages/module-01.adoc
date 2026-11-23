@@ -59,7 +59,7 @@ As part of this lab you will have access to 1 machine:
 * rhel
 
 * **Operating System**: Red Hat Enterprise Linux 10.1+
-* **Required Packages**: `ssh`, `sshd` (pre-installed)
+* **Required Packages**: `openssh` (pre-installed)
 * **Estimated Time**: 30 minutes
 
 === Environment Diagram
