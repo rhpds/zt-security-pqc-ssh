@@ -31,6 +31,12 @@ the post-quantum key exchange. The `01-` prefix ensures it is read first, so its
 echo "KexAlgorithms mlkem768x25519-sha256" | sudo tee /etc/ssh/sshd_config.d/01-pqc-required.conf
 ----
 
+Password:
+[source,js,subs="+macros,+attributes",role=execute]
+----
+{bastion_ssh_password}
+----
+
 == Step 3 — Test the configuration before applying it
 
 Always validate sshd syntax before restarting:
@@ -67,6 +73,12 @@ exchange is already post-quantum:
 ssh node1 hostname
 ----
 
+Password:
+[source,js,subs="+macros,+attributes",role=execute]
+----
+{bastion_ssh_password}
+----
+
 It prints `node1` — success.
 
 == Step 6 — Verify a classical-only client is now rejected
@@ -77,6 +89,12 @@ Try to connect using *only* a classical key exchange. This time it must *fail*, 
 [source,bash,role=execute]
 ----
 ssh -o KexAlgorithms=curve25519-sha256 node1 hostname
+----
+
+Password:
+[source,js,subs="+macros,+attributes",role=execute]
+----
+{bastion_ssh_password}
 ----
 
 You should see an error like:

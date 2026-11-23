@@ -66,16 +66,16 @@ As part of this lab you will have access to 1 machine:
 
 [source,text]
 ----
-                         Lab Environment
-    ┌──────────────────────────────────────────────────────┐
-    │                                                      │
-    │   ┌──────────────┐                                   │
-    │   │   bastion    │                                   │
-    │   │              │                                   │
-    │   │    rhel      │                                   │
-    │   └──────────────┘                                   │
-    │                                                      │
-    └──────────────────────────────────────────────────────┘
+                             Lab Environment
+    ┌────────────────────────────────────────────────────────────┐
+    │                                                            │
+    │   ┌──────────────┐              ssh node1    ┌───────────┐ │
+    │   │   Box 1       │ ───────────────────────▶│   Box 2   │ │
+    │   │    rhel       │                          │   node1   │ │
+    │   │  (bastion)    │                          │   with    │ │
+    │   └──────────────┘                           │ imgbuilder│ │
+    │                                              └───────────┘ │
+    └────────────────────────────────────────────────────────────┘
 ----
 
 You will have a couple of accounts you will have access to.
@@ -84,6 +84,19 @@ You will have a couple of accounts you will have access to.
 
 * rhel
 * root
+
+
+Username:
+[source,js]
+----
+rhel
+----
+
+Password:
+[source,js,subs="+macros,+attributes",role=execute]
+----
+{bastion_ssh_password}
+----
 
 [NOTE]
 ====

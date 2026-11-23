@@ -13,6 +13,12 @@ From the `rhel` terminal, SSH to `node1`:
 ssh node1
 ----
 
+Password:
+[source,js,subs="+macros,+attributes",role=execute]
+----
+{bastion_ssh_password}
+----
+
 The first time, SSH may ask you to accept node1's host key — type `yes` if prompted. You are
 now logged in to *node1* as the `rhel` user. Confirm where you are:
 
