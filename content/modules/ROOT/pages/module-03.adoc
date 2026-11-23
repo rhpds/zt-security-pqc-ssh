@@ -44,12 +44,14 @@ single remote command with verbose logging and filter for the KEX line:
 ssh -v node1 true 2>&1 | grep "kex: algorithm:"
 ----
 
-You should see a line like:
+You do not need to type in the password or complete the connection to see a line saying:
 
 [source,text]
 ----
 debug1: kex: algorithm: mlkem768x25519-sha256
 ----
+
+You can stop the connection by using "ctrl + c" on your keyboard.
 
 [IMPORTANT]
 ====
@@ -68,6 +70,8 @@ connection and look at the negotiated algorithm:
 ----
 ssh -o KexAlgorithms=curve25519-sha256 -v node1 true 2>&1 | grep "kex: algorithm:"
 ----
+
+You can stop the connection by using "ctrl + c" on your keyboard.
 
 This time the negotiated algorithm is `curve25519-sha256` — a strong *classical* exchange,
 but one with no quantum protection. A recorded session using it would be vulnerable to
