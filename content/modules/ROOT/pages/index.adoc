@@ -2,7 +2,7 @@
 
 Quantum computers are coming, and they will break the public-key cryptography that protects most of today's network traffic. You do not have to wait for that day to defend against it. Red Hat Enterprise Linux 10 ships post-quantum cryptography (PQC) support directly in OpenSSH, so you can harden your SSH connections right now using the tools and workflows you already know.
 
-In this hands-on lab you play the role of a system administrator securing SSH on RHEL 10. You start by inspecting a normal, classical SSH handshake. Then you enforce a hybrid post-quantum key exchange system-wide, watch the handshake change, and finish by creating and logging in with a post-quantum authentication key. Everything happens from the command line in about 30 minutes.
+In this hands-on lab you play the role of a system administrator securing SSH on RHEL 10. You start by confirming post-quantum key exchange is already built into the system, prove it on a real SSH connection, and finish by hardening the server so a quantum-vulnerable connection is no longer even possible. Everything happens from the command line in about 30 minutes.
 
 == The Threat: Harvest Now, Decrypt Later
 
@@ -16,17 +16,19 @@ The good news: the fix is already in RHEL 10, and this lab shows you how to use 
 
 == What You'll Do
 
-This lab is part 1 of a 3-part session, delivered as three short modules:
+This lab is part 1 of a 3-part session, delivered as four short modules:
 
-* *Module 1: Inspect a Classical SSH Session* — Connect from a RHEL 10 client to a server with `ssh -vv` and read the raw handshake to record the default classical key exchange. This is your baseline.
-* *Module 2: Enforce Hybrid Post-Quantum Key Exchange (ML-KEM)* — Use `update-crypto-policies` to enforce a hybrid post-quantum key exchange system-wide, then reconnect and confirm OpenSSH now negotiates an ML-KEM-based algorithm.
-* *Module 3: Create and Use Post-Quantum Authentication Keys (ML-DSA)* — Generate a hybrid post-quantum SSH key pair with `ssh-keygen`, install the public key on the server, and log in with it — verifying post-quantum authentication end to end.
+* *Module 1: About This Lab* — The quantum threat, post-quantum cryptography, and the lab environment.
+* *Module 2: Your Post-Quantum Foundation* — Confirm that RHEL 10's `DEFAULT` crypto policy and OpenSSH already support a hybrid ML-KEM key exchange, with nothing extra to install or enable.
+* *Module 3: A Post-Quantum SSH Connection* — Connect from `rhel` to `node1` with verbose SSH output and prove the connection negotiated `mlkem768x25519-sha256`, then contrast it with a classical-only connection.
+* *Module 4: Require Post-Quantum SSH* — Harden `node1`'s `sshd` configuration so it only accepts a post-quantum key exchange, and confirm a classical-only client is rejected.
 
 By the end, you will be able to:
 
-* Configure system-wide crypto policies to enforce hybrid post-quantum (ML-KEM) key exchange for OpenSSH on RHEL 10.
-* Observe the difference between classical and post-quantum key exchange by inspecting raw SSH handshake logs (`ssh -vv`).
-* Create and authenticate with a hybrid post-quantum (ML-DSA) SSH key pair on RHEL 10.
+* Explain the quantum threat to cryptography and "harvest now, decrypt later."
+* Confirm that post-quantum cryptography is already enabled on Red Hat Enterprise Linux 10.
+* Observe the difference between classical and post-quantum key exchange by inspecting raw SSH handshake logs (`ssh -v`/`-vv`).
+* Harden an SSH server so that it *requires* post-quantum key exchange.
 
 == Who This Lab Is For
 
@@ -37,22 +39,21 @@ You should be comfortable with a few basics before you start:
 * Running basic commands in a Linux terminal (`cd`, `ls`, `cat`, and editing a file).
 * Connecting to a host over SSH.
 
-No prior cryptography or post-quantum knowledge is required. Every new concept — HNDL, crypto policies, key exchange, ML-KEM, and ML-DSA — is explained as you go.
+No prior cryptography or post-quantum knowledge is required. Every new concept — HNDL, crypto policies, and key exchange — is explained as you go.
 
 == Your Lab Environment
 
 You have your own environment with two Red Hat Enterprise Linux 10 virtual machines:
 
-* A *client* — where you run commands and open SSH connections.
-* A *server* — the host you connect to.
+* *rhel* — the bastion. You run every command in this lab from here.
+* *node1* — the host you reach over SSH in modules 3 and 4.
 
-You interact with both machines through two terminal tabs at the side of this screen:
+You interact with the environment through a single terminal tab at the side of this screen:
 
-* *>_ Client* — a shell on the client VM. You run most commands here.
-* *>_ Server* — a shell on the server VM, for the few steps that configure the server directly.
+* *>_ terminal* — a shell on the `rhel` bastion. When a step has you connect to `node1`, you run `ssh node1` from this same terminal, then `exit` to return to `rhel` when the module tells you to.
 
-Each module tells you which terminal to use. The SSH user on both machines is `rhel`.
+The SSH user on both machines is `rhel`.
 
 Commands shown in a shaded box are ready to run. In this zero-touch environment you can click the command to send it straight to the active terminal — no copy and paste needed.
 
-When you are ready, open *Module 1* from the navigation to inspect your first SSH handshake and see the classical baseline for yourself.
+When you are ready, open *Module 1* to get started.

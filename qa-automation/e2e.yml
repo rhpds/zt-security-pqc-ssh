@@ -1,112 +1,156 @@
 ---
 # E2E — End-to-end test
-# Verifies the full lab works from start to finish without manual intervention:
-#   Module 2 — enforce hybrid post-quantum (ML-KEM) key exchange system-wide
-#   Module 3 — create an ML-DSA key, install it on the server, and log in with it
-#   Verify   — a new SSH session negotiates ML-KEM kex AND authenticates via the
-#              post-quantum key.
+# Verifies the "Getting Started with Post-Quantum Cryptography in RHEL 10
+# OpenSSH" lab works end to end. Modules 1-3 are observation only (nothing
+# to configure — RHEL 10.1+ ships post-quantum key exchange in the DEFAULT
+# crypto policy already); module 4 is the lab's one state-changing action
+# (requiring post-quantum key exchange on node1). This test checks the two
+# end results that matter, not each individual module step:
+#   1. The starting state modules 1-3 rely on: DEFAULT crypto policy,
+#      mlkem768x25519-sha256 offered, and a real rhel -> node1 connection
+#      already negotiating it.
+#   2. The end state module 4 produces: a post-quantum connection to node1
+#      still succeeds, and a classical-only connection is rejected.
 #
-# This plays the "solve" actions and then asserts the expected end state, so it is
-# independent of the per-module Solve/Validate buttons.
-#
-# Inventory expectations (define these in the lab inventory / Project Zero config):
-#   [clients] — the RHEL 10 client host the learner works from
-#   [servers] — the RHEL 10 server host the learner connects to
+# Inventory: this QA playbook runs in the runner's "standalone" mode, which
+# supplies no external inventory — it must build its own, same as
+# setup-automation/main.yml and runtime-automation/main.yml do. rhel and
+# node1 are each their own Kubernetes Service in this namespace (reachable
+# by that DNS name directly), and the runner container's own environment
+# already carries BASTION_PORT / ANSIBLE_USER / ANSIBLE_PASSWORD for both.
 #
 # Exit 0 = the lab is solvable end to end; non-zero = something is broken.
 
-# ---------------------------------------------------------------------------
-# Tunables — confirm these against the actual RHEL 10 lab image.
-# ---------------------------------------------------------------------------
-# e2e_ssh_user        : lab user account provisioned by step1_pqc_ssh_baseline
-# e2e_pq_policy       : crypto sub-policy that enables ML-KEM hybrid key exchange
-#                       (TODO: confirm the real RHEL 10 sub-policy string)
-# e2e_kex_marker      : substring that must appear in the negotiated kex line
-# e2e_ml_dsa_key_type : ssh-keygen -t type for the ML-DSA key
-#                       (TODO: confirm the real key-type string on the image)
-# e2e_key_file        : path to the ML-DSA private key on the client
+- name: "E2E — Build inventory from the running environment"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: "Register rhel (bastion) and node1"
+      ansible.builtin.add_host:
+        name: "{{ item.name }}"
+        groups: "{{ item.group }}"
+        ansible_host: "{{ item.name }}"
+        ansible_port: "{{ lookup('ansible.builtin.env', 'BASTION_PORT') }}"
+        ansible_user: "{{ lookup('ansible.builtin.env', 'ANSIBLE_USER') }}"
+        ansible_password: "{{ lookup('ansible.builtin.env', 'ANSIBLE_PASSWORD') }}"
+        ansible_become_password: "{{ lookup('ansible.builtin.env', 'ANSIBLE_PASSWORD') }}"
+      loop:
+        - { name: rhel, group: bastions }
+        - { name: node1, group: nodes }
 
-- name: "E2E — Solve: enforce hybrid post-quantum key exchange (Module 2)"
-  hosts: servers
+- name: "E2E — Safety check: read each host's own SSH host key"
+  hosts: bastions:nodes
+  become: true
+  gather_facts: false
+  tasks:
+    - name: "Read this host's SSH host public key"
+      ansible.builtin.slurp:
+        src: /etc/ssh/ssh_host_ed25519_key.pub
+      register: e2e_hostkey
+
+- name: "E2E — Safety check: confirm rhel and node1 are genuinely distinct hosts"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: "Assert rhel and node1 did not resolve to the same backend"
+      ansible.builtin.assert:
+        that:
+          - hostvars['rhel'].e2e_hostkey.content != hostvars['node1'].e2e_hostkey.content
+        success_msg: "rhel and node1 are confirmed to be distinct hosts — safe to proceed."
+        fail_msg: >-
+          rhel and node1 returned the IDENTICAL SSH host key. Inventory name
+          resolution ("rhel"/"node1") is pointing both at the same backend —
+          almost certainly a transient DNS/network misresolution in this
+          environment. Refusing to proceed with module 4's hardening step to
+          avoid writing sshd config to the wrong VM.
+
+- name: "E2E — Precondition: post-quantum key exchange is available by default"
+  hosts: bastions
+  gather_facts: false
+  vars:
+    e2e_kex_marker: mlkem768x25519-sha256
+  tasks:
+    - name: "Read the system-wide crypto policy"
+      ansible.builtin.command: update-crypto-policies --show
+      register: e2e_policy
+      changed_when: false
+
+    - name: "List OpenSSH's supported key exchange algorithms"
+      ansible.builtin.command: ssh -Q kex
+      register: e2e_kex_list
+      changed_when: false
+
+    - name: "Connect to node1 and capture the negotiated key exchange"
+      ansible.builtin.command: ssh -v node1 true
+      register: e2e_baseline_kex
+      changed_when: false
+
+    - name: "Assert the lab's starting state matches what modules 1-3 teach"
+      ansible.builtin.assert:
+        that:
+          - e2e_policy.stdout | trim == "DEFAULT"
+          - e2e_kex_marker in e2e_kex_list.stdout
+          - (e2e_kex_marker in e2e_baseline_kex.stderr)
+        success_msg: >-
+          Crypto policy is DEFAULT, OpenSSH offers mlkem768x25519-sha256, and
+          a real rhel -> node1 connection already negotiates it.
+        fail_msg: >-
+          Starting state does not match the lab's assumptions. Crypto policy:
+          '{{ e2e_policy.stdout | trim }}'. kex list contains marker:
+          {{ e2e_kex_marker in e2e_kex_list.stdout }}. Baseline connection
+          negotiated: {{ e2e_baseline_kex.stderr | regex_search('kex: algorithm:.*') | default('not found') }}.
+
+- name: "E2E — Solve: require post-quantum key exchange on node1 (module 4)"
+  hosts: nodes
   become: true
   gather_facts: false
   vars:
-    e2e_pq_policy: "DEFAULT:TEST-PQ"   # TODO: confirm real ML-KEM sub-policy
+    e2e_kex_marker: mlkem768x25519-sha256
+    e2e_sshd_dropin: /etc/ssh/sshd_config.d/01-pqc-required.conf
   tasks:
-    - name: "Read current system-wide crypto policy"
-      ansible.builtin.command: update-crypto-policies --show
-      register: e2e_policy_before
+    - name: "Require post-quantum key exchange via an sshd drop-in"
+      ansible.builtin.copy:
+        dest: "{{ e2e_sshd_dropin }}"
+        content: "KexAlgorithms {{ e2e_kex_marker }}\n"
+        mode: "0644"
+
+    - name: "Validate the sshd configuration before reloading"
+      ansible.builtin.command: "sshd -t"
       changed_when: false
 
-    - name: "Enforce the post-quantum crypto policy"
-      ansible.builtin.command: "update-crypto-policies --set {{ e2e_pq_policy }}"
-      when: e2e_policy_before.stdout | trim != e2e_pq_policy
-      notify: Restart sshd
-
-    - name: "Confirm the crypto policy is now the post-quantum policy"
-      ansible.builtin.command: update-crypto-policies --show
-      register: e2e_policy_after
-      changed_when: false
-      failed_when: e2e_policy_after.stdout | trim != e2e_pq_policy
-
-  handlers:
-    - name: Restart sshd
+    - name: "Restart sshd to apply the hardened configuration"
       ansible.builtin.service:
         name: sshd
         state: restarted
 
-- name: "E2E — Solve + verify: ML-DSA authentication and ML-KEM handshake (Module 3)"
-  hosts: clients
+- name: "E2E — Verify: node1 now requires post-quantum key exchange"
+  hosts: bastions
   gather_facts: false
-  vars:
-    e2e_ssh_user: rhel
-    e2e_ml_dsa_key_type: "ml-dsa-65"          # TODO: confirm real ML-DSA key type
-    e2e_key_file: "/home/{{ e2e_ssh_user }}/.ssh/id_mldsa_e2e"
-    e2e_kex_marker: "mlkem"                    # negotiated kex must contain this
-    e2e_server_host: "{{ groups['servers'][0] }}"
   tasks:
-    - name: "Generate a fresh ML-DSA key pair (no passphrase)"
-      ansible.builtin.command:
-        cmd: "ssh-keygen -t {{ e2e_ml_dsa_key_type }} -N '' -f {{ e2e_key_file }}"
-        creates: "{{ e2e_key_file }}"
-      become: true
-      become_user: "{{ e2e_ssh_user }}"
-
-    - name: "Install the ML-DSA public key on the server"
-      ansible.posix.authorized_key:
-        user: "{{ e2e_ssh_user }}"
-        key: "{{ lookup('file', e2e_key_file + '.pub') }}"
-        state: present
-      delegate_to: "{{ e2e_server_host }}"
-      become: true
-
-    - name: "Connect to the server with the ML-DSA key and capture the handshake"
-      ansible.builtin.command:
-        cmd: >-
-          ssh -vv
-          -i {{ e2e_key_file }}
-          -o BatchMode=yes
-          -o StrictHostKeyChecking=no
-          -o PasswordAuthentication=no
-          {{ e2e_ssh_user }}@{{ e2e_server_host }}
-          hostname
-      become: true
-      become_user: "{{ e2e_ssh_user }}"
-      register: e2e_ssh
+    - name: "Confirm a normal connection still succeeds (it is already post-quantum)"
+      ansible.builtin.command: ssh node1 hostname
+      register: e2e_pq_connect
       changed_when: false
 
-    - name: "Assert the session negotiated an ML-KEM hybrid key exchange"
-      ansible.builtin.assert:
-        that:
-          - "e2e_ssh.stderr is search('debug1: kex:.*' ~ e2e_kex_marker)"
-        success_msg: "Key exchange negotiated a post-quantum (ML-KEM) algorithm."
-        fail_msg: >-
-          Negotiated key exchange does not contain '{{ e2e_kex_marker }}'.
-          The crypto policy may not enforce ML-KEM. See 'debug1: kex:' in the output.
+    - name: "Confirm a classical-only connection is now rejected"
+      ansible.builtin.command: "ssh -o KexAlgorithms=curve25519-sha256 -o BatchMode=yes node1 hostname"
+      register: e2e_classical_connect
+      changed_when: false
+      failed_when: false
 
-    - name: "Assert authentication succeeded via the post-quantum public key"
+    - name: "Assert the lab's final state: post-quantum required, classical rejected"
       ansible.builtin.assert:
         that:
-          - "'Authentication succeeded (publickey)' in e2e_ssh.stderr"
-        success_msg: "Authenticated to the server using the ML-DSA post-quantum key."
-        fail_msg: "Public-key (ML-DSA) authentication to the server did not succeed."
+          - e2e_pq_connect.rc == 0
+          - e2e_pq_connect.stdout | trim == "node1"
+          - e2e_classical_connect.rc != 0
+          - "'no matching key exchange method found' in e2e_classical_connect.stderr"
+        success_msg: >-
+          node1 requires post-quantum key exchange: post-quantum connections
+          succeed and classical-only connections are rejected.
+        fail_msg: >-
+          Expected node1 to accept only post-quantum key exchange. PQ connect
+          rc: {{ e2e_pq_connect.rc }}. Classical connect rc:
+          {{ e2e_classical_connect.rc }}, stderr: {{ e2e_classical_connect.stderr }}.

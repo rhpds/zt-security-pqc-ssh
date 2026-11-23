@@ -1,23 +1,45 @@
 ---
 # HEALTHCHECK — Quick environment readiness check
-# Runs post-provisioning to verify the lab environment is functional and that
-# learners start from a clean classical baseline. Completes in under 60 seconds.
+# Runs post-provisioning to verify the lab environment is functional.
+# Completes in under 60 seconds.
 #
-# Checks (on every RHEL 10 lab host — clients and servers):
+# Checks (on both RHEL 10 lab hosts — rhel bastion and node1):
 #   - host is reachable
 #   - openssh-server is installed and sshd is running
 #   - the lab user account exists
-#   - the system-wide crypto policy is the classical DEFAULT baseline
-#     (so learners begin from the "before" state — they enforce PQC in Module 2)
+#   - the system-wide crypto policy is DEFAULT, which on RHEL 10.1+ already
+#     includes post-quantum (ML-KEM) key exchange — this lab's starting state
 #
 # Exit 0 = healthy, non-zero = unhealthy.
 #
 # Tunables:
-#   hc_ssh_user            : lab user provisioned by step1_pqc_ssh_baseline
-#   hc_expected_crypto_policy : baseline policy learners start from
+#   hc_ssh_user                : lab user provisioned by setup-automation/
+#   hc_expected_crypto_policy  : policy learners start from
+#
+# Inventory: this QA playbook runs in the runner's "standalone" mode, which
+# supplies no external inventory — it builds its own below, same as
+# setup-automation/main.yml and runtime-automation/main.yml do.
+
+- name: "Build inventory from the running environment"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: "Register rhel (bastion) and node1"
+      ansible.builtin.add_host:
+        name: "{{ item.name }}"
+        groups: "{{ item.group }}"
+        ansible_host: "{{ item.name }}"
+        ansible_port: "{{ lookup('ansible.builtin.env', 'BASTION_PORT') }}"
+        ansible_user: "{{ lookup('ansible.builtin.env', 'ANSIBLE_USER') }}"
+        ansible_password: "{{ lookup('ansible.builtin.env', 'ANSIBLE_PASSWORD') }}"
+        ansible_become_password: "{{ lookup('ansible.builtin.env', 'ANSIBLE_PASSWORD') }}"
+      loop:
+        - { name: rhel, group: bastions }
+        - { name: node1, group: nodes }
 
 - name: "Environment Health Check"
-  hosts: all
+  hosts: bastions:nodes
   gather_facts: false
   vars:
     hc_ssh_user: rhel
@@ -54,12 +76,12 @@
       register: hc_crypto_policy
       changed_when: false
 
-    - name: "Assert the crypto policy is the classical baseline"
+    - name: "Assert the crypto policy is the lab's starting policy"
       ansible.builtin.assert:
         that:
           - hc_crypto_policy.stdout | trim == hc_expected_crypto_policy
-        success_msg: "Crypto policy is '{{ hc_expected_crypto_policy }}' — clean classical baseline."
+        success_msg: "Crypto policy is '{{ hc_expected_crypto_policy }}', which already includes post-quantum key exchange on RHEL 10.1+."
         fail_msg: >-
           Crypto policy is '{{ hc_crypto_policy.stdout | trim }}', expected
-          '{{ hc_expected_crypto_policy }}'. Learners must start from the classical
-          baseline before enforcing PQC in Module 2.
+          '{{ hc_expected_crypto_policy }}'. Learners must start from this
+          policy for modules 2-3 to observe the expected post-quantum state.
