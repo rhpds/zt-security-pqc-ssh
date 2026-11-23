@@ -1,4 +1,4 @@
-= Require Post-Quantum SSH
+= Step 4. Require Post-Quantum SSH
 
 In the previous module, `node1` accepted both post-quantum and classical key exchanges. For a
 high-value server you may want to *mandate* post-quantum key exchange so that no client can
@@ -12,7 +12,7 @@ the config before restarting sshd* — a bad sshd config can lock you out. These
 safe drop-in file and a config test, so you can recover easily.
 ====
 
-== Step 1 — Connect to node1
+== Step 4.1 — Connect to node1
 
 [source,bash,role=execute]
 ----
@@ -20,14 +20,14 @@ ssh node1
 ----
 
 Password:
-[source,bash,role=execute]
+[source,bash,subs="+macros,+attributes",role=execute]
 ----
 {bastion_ssh_password}
 ----
 
 You are now on *node1*. The remaining steps run here until you are told to exit.
 
-== Step 2 — Create an sshd drop-in that requires post-quantum KEX
+== Step 4.2 — Create an sshd drop-in that requires post-quantum KEX
 
 RHEL's sshd reads drop-in files from `/etc/ssh/sshd_config.d/`. Create one that allows *only*
 the post-quantum key exchange. The `01-` prefix ensures it is read first, so its setting wins:
@@ -37,7 +37,7 @@ the post-quantum key exchange. The `01-` prefix ensures it is read first, so its
 echo "KexAlgorithms mlkem768x25519-sha256" | sudo tee /etc/ssh/sshd_config.d/01-pqc-required.conf
 ----
 
-== Step 3 — Test the configuration before applying it
+== Step 4.3 — Test the configuration before applying it
 
 Always validate sshd syntax before restarting:
 
@@ -49,7 +49,7 @@ sudo sshd -t && echo "sshd config OK"
 If you see `sshd config OK`, it is safe to proceed. (If not, remove the file with
 `sudo rm /etc/ssh/sshd_config.d/01-pqc-required.conf` and try again.)
 
-== Step 4 — Apply the change
+== Step 4.4 — Apply the change
 
 [source,bash,role=execute]
 ----
@@ -63,7 +63,7 @@ Now return to the `rhel` bastion:
 exit
 ----
 
-== Step 5 — Verify a post-quantum connection still works
+== Step 4.5 — Verify a post-quantum connection still works
 
 From `rhel`, make a normal connection. It should still succeed, because the default key
 exchange is already post-quantum:
@@ -74,7 +74,7 @@ ssh node1 hostname
 ----
 
 Password:
-[source,bash,role=execute]
+[source,bash,subs="+macros,+attributes",role=execute]
 ----
 {bastion_ssh_password}
 ----
@@ -88,7 +88,7 @@ Now return to the `rhel` bastion:
 exit
 ----
 
-== Step 6 — Verify a classical-only client is now rejected
+== Step 4.6 — Verify a classical-only client is now rejected
 
 Try to connect using *only* a classical key exchange. This time it must *fail*, because
 `node1` no longer offers any classical option:
@@ -99,7 +99,7 @@ ssh -o KexAlgorithms=curve25519-sha256 node1 hostname
 ----
 
 Password:
-[source,bash,role=execute]
+[source,bash,subs="+macros,+attributes",role=execute]
 ----
 {bastion_ssh_password}
 ----

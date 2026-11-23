@@ -1,17 +1,17 @@
-= Your Post-Quantum Foundation
+= Step 2 Your Post-Quantum Foundation
 
 Before using post-quantum SSH, let's confirm that post-quantum cryptography is already
 enabled on this RHEL 10 system. On RHEL 10.1 and later you do *not* install anything or flip
 a preview switch — it is part of the standard configuration.
 
-== Step 1 — Confirm the operating system
+== Step 2.1 — Confirm the operating system
 
 [source,bash,role=execute]
 ----
 cat /etc/redhat-release
 ----
 
-== Step 2 — Look at the system-wide crypto policy
+== Step 2.2 — Look at the system-wide crypto policy
 
 RHEL controls which cryptographic algorithms every compliant application may use through a
 single system-wide setting called the *crypto-policy*. Show it:
@@ -31,7 +31,7 @@ required an extra package and a `DEFAULT:TEST-PQ` sub-policy. From RHEL 10.1 onw
 is gone — PQC is in `DEFAULT`. This lab uses a 10.1+ image, so you simply see `DEFAULT`.
 ====
 
-== Step 3 — See which key exchange algorithms OpenSSH supports
+== Step 2.3 — See which key exchange algorithms OpenSSH supports
 
 SSH negotiates a shared session key using a *key exchange (KEX)* algorithm. Ask OpenSSH which
 ones it offers:
@@ -64,7 +64,7 @@ giving up the proven classical algorithm. This is the single most important defe
 "harvest now, decrypt later" for SSH.
 ====
 
-== Step 4 — Confirm it is the preferred algorithm
+== Step 2.4 — Confirm it is the preferred algorithm
 
 Check the effective client configuration to see which KEX algorithms SSH will actually offer,
 in order of preference:
@@ -74,11 +74,6 @@ in order of preference:
 ssh -G localhost | grep -i kexalgorithms
 ----
 
-Password:
-[source,bash,role=execute]
-----
-{bastion_ssh_password}
-----
 
 `mlkem768x25519-sha256` appears *first* in the list, which means SSH will try the
 post-quantum exchange before any classical one.

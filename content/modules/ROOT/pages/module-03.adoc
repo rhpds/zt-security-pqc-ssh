@@ -1,10 +1,10 @@
-= A Post-Quantum SSH Connection
+= Step 3 A Post-Quantum SSH Connection
 
 Time to use it. In this module you will connect from *rhel* to *node1* over SSH and prove
 that the connection negotiated the post-quantum *ML-KEM* key exchange — automatically, with
 no special flags.
 
-== Step 1 — Connect to node1
+== Step 3.1 — Connect to node1
 
 From the `rhel` terminal, SSH to `node1`:
 
@@ -14,7 +14,7 @@ ssh node1
 ----
 
 Password:
-[source,bash,role=execute]
+[source,bash,subs="+macros,+attributes",role=execute]
 ----
 {bastion_ssh_password}
 ----
@@ -34,7 +34,7 @@ It should print `node1`. Return to the `rhel` bastion:
 exit
 ----
 
-== Step 2 — Reveal the negotiated key exchange
+== Step 3.2 — Reveal the negotiated key exchange
 
 SSH does not announce the key exchange it chose unless you ask for verbose output. Run a
 single remote command with verbose logging and filter for the KEX line:
@@ -59,7 +59,7 @@ a quantum computer, because the session key was protected by ML-KEM-768. You did
 ask for it — on RHEL 10.1+ it is the default.
 ====
 
-== Step 3 — Contrast with a classical-only connection
+== Step 3.3 — Contrast with a classical-only connection
 
 To appreciate the difference, force SSH to use *only* a classical key exchange for one
 connection and look at the negotiated algorithm:

@@ -87,16 +87,17 @@ You will have a couple of accounts you will have access to.
 
 
 Username:
-[source,bash,role=execute]
+[source,bash]
 ----
 rhel
 ----
 
 Password:
-[source,bash,role=execute]
+[source,bash,subs="+macros,+attributes",role=execute]
 ----
 {bastion_ssh_password}
 ----
+
 
 [NOTE]
 ====
