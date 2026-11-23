@@ -74,6 +74,12 @@ in order of preference:
 ssh -G localhost | grep -i kexalgorithms
 ----
 
+Password:
+[source,bash,role=execute]
+----
+{bastion_ssh_password}
+----
+
 `mlkem768x25519-sha256` appears *first* in the list, which means SSH will try the
 post-quantum exchange before any classical one.
 

@@ -59,7 +59,7 @@ As part of this lab you will have access to 1 machine:
 * rhel
 
 * **Operating System**: Red Hat Enterprise Linux 10.1+
-* **Required Packages**: `audit`, `audit-libs` (pre-installed)
+* **Required Packages**: `ssh`, `sshd` (pre-installed)
 * **Estimated Time**: 30 minutes
 
 === Environment Diagram
@@ -70,9 +70,9 @@ As part of this lab you will have access to 1 machine:
     ┌────────────────────────────────────────────────────────────┐
     │                                                            │
     │   ┌──────────────┐              ssh node1    ┌───────────┐ │
-    │   │   Box 1       │ ───────────────────────▶│   Box 2   │ │
-    │   │    rhel       │                          │   node1   │ │
-    │   │  (bastion)    │                          │   with    │ │
+    │   │   Box 1      │ ──────────────────────▶  │   Box 2   │ │
+    │   │    rhel      │                           │   node1   │ │
+    │   │  (bastion)   │                           │   with    │ │
     │   └──────────────┘                           │ imgbuilder│ │
     │                                              └───────────┘ │
     └────────────────────────────────────────────────────────────┘
@@ -87,13 +87,13 @@ You will have a couple of accounts you will have access to.
 
 
 Username:
-[source,js]
+[source,bash,role=execute]
 ----
 rhel
 ----
 
 Password:
-[source,js,subs="+macros,+attributes",role=execute]
+[source,bash,role=execute]
 ----
 {bastion_ssh_password}
 ----

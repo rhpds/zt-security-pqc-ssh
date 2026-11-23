@@ -14,7 +14,7 @@ ssh node1
 ----
 
 Password:
-[source,js,subs="+macros,+attributes",role=execute]
+[source,bash,role=execute]
 ----
 {bastion_ssh_password}
 ----

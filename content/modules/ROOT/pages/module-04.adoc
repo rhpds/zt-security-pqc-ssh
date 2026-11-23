@@ -19,6 +19,12 @@ safe drop-in file and a config test, so you can recover easily.
 ssh node1
 ----
 
+Password:
+[source,bash,role=execute]
+----
+{bastion_ssh_password}
+----
+
 You are now on *node1*. The remaining steps run here until you are told to exit.
 
 == Step 2 — Create an sshd drop-in that requires post-quantum KEX
@@ -29,12 +35,6 @@ the post-quantum key exchange. The `01-` prefix ensures it is read first, so its
 [source,bash,role=execute]
 ----
 echo "KexAlgorithms mlkem768x25519-sha256" | sudo tee /etc/ssh/sshd_config.d/01-pqc-required.conf
-----
-
-Password:
-[source,js,subs="+macros,+attributes",role=execute]
-----
-{bastion_ssh_password}
 ----
 
 == Step 3 — Test the configuration before applying it
@@ -74,12 +74,19 @@ ssh node1 hostname
 ----
 
 Password:
-[source,js,subs="+macros,+attributes",role=execute]
+[source,bash,role=execute]
 ----
 {bastion_ssh_password}
 ----
 
 It prints `node1` — success.
+
+Now return to the `rhel` bastion:
+
+[source,bash,role=execute]
+----
+exit
+----
 
 == Step 6 — Verify a classical-only client is now rejected
 
@@ -92,7 +99,7 @@ ssh -o KexAlgorithms=curve25519-sha256 node1 hostname
 ----
 
 Password:
-[source,js,subs="+macros,+attributes",role=execute]
+[source,bash,role=execute]
 ----
 {bastion_ssh_password}
 ----
