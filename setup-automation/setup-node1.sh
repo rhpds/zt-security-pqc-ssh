@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 USER=rhel
 
 echo "Adding wheel" > /root/post-run.log
@@ -32,7 +33,9 @@ authorize_key() {
 authorize_key /home/rhel rhel:rhel
 authorize_key /root root:root
 
-systemctl enable --now sshd
+# Setup reaches this VM over SSH; do not re-enable or reload the service
+# on the connection that is installing the learner's key.
+systemctl is-active --quiet sshd
 
 echo "Lab setup complete" >> /tmp/progress.log
 exit 0
