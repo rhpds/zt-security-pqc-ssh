@@ -21,9 +21,18 @@
         argv: ["ssh", "-Q", "kex"]
       register: algorithms
       changed_when: false
-    - name: "Confirm the learner can reach and administer a distinct node1"
+    - name: Read effective client KEX preferences as in Module 2
       ansible.builtin.command:
-        argv: ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "node1", "hostname -s && sudo -n /usr/sbin/sshd -t"]
+        argv: [ssh, -G, localhost]
+      register: effective_client
+      changed_when: false
+    - name: Read the bastion machine identity
+      ansible.builtin.command: cat /etc/machine-id
+      register: bastion_id
+      changed_when: false
+    - name: Confirm the learner can reach and administer node1
+      ansible.builtin.command:
+        argv: [ssh, -o, BatchMode=yes, -o, ConnectTimeout=8, node1, "hostname -s && cat /etc/machine-id && sudo -n /usr/sbin/sshd -t"]
       register: node
       changed_when: false
     - name: "Assert the expected environment"
@@ -32,4 +41,10 @@
           - "rhel_release.stdout | trim == '10'"
           - "policy.stdout | trim == 'DEFAULT'"
           - "'mlkem768x25519-sha256' in algorithms.stdout_lines"
-          - "node.stdout | trim == 'node1'"
+          - effective_client.stdout is search('(?im)^kexalgorithms[ \t]+mlkem768x25519-sha256(?:,|$)')
+          - node.stdout_lines | length == 2
+          - node.stdout_lines[0] == 'node1'
+          - bastion_id.stdout is match('^[0-9a-f]{32}$')
+          - node.stdout_lines[1] is match('^[0-9a-f]{32}$')
+          - node.stdout_lines[1] != bastion_id.stdout
+        fail_msg: Lab baseline check failed. Confirm ML-KEM is preferred and node1 is a separate VM.
