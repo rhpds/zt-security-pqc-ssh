@@ -26,14 +26,24 @@
         argv: [ssh, -G, localhost]
       register: effective_client
       changed_when: false
-    # CNV guests cloned from the same template may share /etc/machine-id.
-    - name: Read the bastion VM hardware UUID
-      ansible.builtin.command: sudo -n cat /sys/class/dmi/id/product_uuid
-      register: bastion_id
+    # Use the SSH server identity, not a hardware or cloned OS identifier.
+    - name: Read the bastion SSH server host-key fingerprint
+      ansible.builtin.command:
+        argv: [sudo, -n, /usr/bin/ssh-keygen, -E, sha256, -lf, /etc/ssh/ssh_host_ed25519_key.pub]
+      register: bastion_host_key
       changed_when: false
     - name: Confirm the learner can reach and administer node1
       ansible.builtin.command:
-        argv: [ssh, -o, BatchMode=yes, -o, ConnectTimeout=8, node1, "hostname -s && sudo -n cat /sys/class/dmi/id/product_uuid && sudo -n /usr/sbin/sshd -t"]
+        argv:
+          - ssh
+          - -o
+          - BatchMode=yes
+          - -o
+          - ConnectTimeout=8
+          - node1
+          - >-
+            hostname -s && sudo -n /usr/bin/ssh-keygen -E sha256
+            -lf /etc/ssh/ssh_host_ed25519_key.pub && sudo -n /usr/sbin/sshd -t
       register: node
       changed_when: false
     - name: "Assert the expected environment"
@@ -45,9 +55,7 @@
           - effective_client.stdout is search('(?im)^kexalgorithms[ \t]+mlkem768x25519-sha256(?:,|$)')
           - node.stdout_lines | length == 2
           - node.stdout_lines[0] == 'node1'
-          - bastion_id.stdout is match('(?i)^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
-          - node.stdout_lines[1] is match('(?i)^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
-          - bastion_id.stdout != '00000000-0000-0000-0000-000000000000'
-          - node.stdout_lines[1] != '00000000-0000-0000-0000-000000000000'
-          - node.stdout_lines[1] | lower != bastion_id.stdout | lower
-        fail_msg: Lab baseline check failed. Confirm ML-KEM is preferred and node1 is a separate VM.
+          - bastion_host_key.stdout is match('^256 +SHA256:[A-Za-z0-9+/]{43} ')
+          - node.stdout_lines[1] is match('^256 +SHA256:[A-Za-z0-9+/]{43} ')
+          - node.stdout_lines[1].split()[1] != bastion_host_key.stdout.split()[1]
+        fail_msg: Lab baseline check failed. Confirm ML-KEM is preferred and rhel and node1 have distinct SSH host keys.
